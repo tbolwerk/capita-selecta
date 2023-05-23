@@ -40,6 +40,11 @@ function toUrl(domain: string): string {
     }
 }
 
+function getDomain(url: string): string {
+    let domain = (new URL(url));
+    return domain.hostname.replace('www.', '');
+}
+
 function parseRankedDomainsCsv(filePath: string): string[] {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
@@ -133,7 +138,15 @@ const crawler = new PlaywrightCrawler({
     // - request: an instance of the Request class with information such as URL and HTTP method
     // - page: Playwright's Page object (see https://playwright.dev/docs/api/class-page)
     async requestHandler({ request, page, enqueueLinks, log }) {
-        await CrawlAccept(page, log);
+        let domain = getDomain(request.url);
+
+        // Only accept cookies when the consent mode says so
+        if (validatedArgs.consentMode == ConsentMode.Accept) {
+            page.screenshot({ path: domain.concat('_accept_pre_consent.png') });
+            await CrawlAccept(page, log, domain);
+        } else {
+            await page.screenshot({ path: domain.concat('_noop.png') });
+        }
         log.info(`Processing ${request.url}...`);
 
         // A function to be evaluated by Playwright within the browser context.
@@ -178,7 +191,7 @@ console.log('Crawler finished.');
 
 await crawler.run(startUrls);
 
-async function CrawlAccept(page: Page, log: Log) {
+async function CrawlAccept(page: Page, log: Log, domain: string) {
     await consent_accept_selectors.forEach(async selector => {
         const locators = await page.locator(selector).all();
         if (locators.length > 0) {
@@ -188,6 +201,6 @@ async function CrawlAccept(page: Page, log: Log) {
             log.info(`consent button not found for ${selector}`);
         }
     });
-    return page.screenshot({ path: 'after-consent.png' });
+    // TODO: wait 10sec.
+    return page.screenshot({ path: domain.concat('_accept_post_consent.png') });
 }
-
