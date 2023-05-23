@@ -1,8 +1,95 @@
 // For more information, see https://crawlee.dev/
-import { PlaywrightCrawler, ProxyConfiguration,Dataset } from 'crawlee';
-import {Page, selectors} from 'playwright';
-import {Log} from '@apify/log';
-const consent_accept_selectors:Map<string, string> = new Map([
+import * as fs from "fs";
+import * as path from "path";
+import { fileURLToPath } from 'url';
+
+import { PlaywrightCrawler, ProxyConfiguration, Dataset } from 'crawlee';
+import { Page, selectors } from 'playwright';
+import { Log } from '@apify/log';
+import { Command } from 'commander'
+import { parse } from 'csv-parse';
+import { load } from 'csv-load-sync';
+
+const program = new Command();
+
+program
+    .option('--accept', 'Run the crawler in accept mode.')
+    .option('--noop', 'Run the crawler in noop mode.')
+    .option('-u <url>', 'Pass a single URL/domain as target.')
+    .option('-i <filePath>', 'Pass a path to a .csv file containing a list of URLs/domains.');
+
+program.parse();
+
+enum ConsentMode {
+    Accept,
+    Noop,
+}
+
+interface ValidatedArgs {
+    consentMode: ConsentMode;
+    targetUrls: Array<string>;
+}
+
+// Check whether the domain is already in URL form or needs to be prefixed with 'https://'.
+function toUrl(domain: string): string {
+    if (domain.startsWith('https')) {
+        return domain;
+    }
+    else {
+        return 'https://'.concat(domain);
+    }
+}
+
+function parseRankedDomainsCsv(filePath: string): string[] {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+
+    const csvFilePath = path.resolve(__dirname, '../'.concat(filePath));
+    const domains = load(csvFilePath, {
+        skip: ['tranco_rank']
+    });
+
+    return domains;
+}
+
+// Validate the command line arguments passed to the script and return a
+// ValidatedArgs instance when successfull or exit the program otherwise.
+function validateArgs(options): ValidatedArgs {
+    if (options.accept == options.noop) {
+        console.error("Either `--accept` or `--noop` must be passed as consent mode.");
+        process.exit(1);
+    }
+    if (!options.u && !options.i) {
+        console.error("Either a single target website or a file with multiple targets must be passed. Run `-h` for usage instructions.");
+        process.exit(1);
+    }
+
+    var targetUrls: string[] = [];
+
+    // Here we make a deliberate choice to allow -u and -i to be passed as argument
+    // simultaenously. Doing so simply takes the conjunction of the two option values.
+    if (options.u) {
+        targetUrls.push(toUrl(options.u));
+    }
+    if (options.i) {
+        const domains = parseRankedDomainsCsv(options.i);
+        domains.forEach((domain) => {
+            targetUrls.push(toUrl(domain['domain']));
+        });
+    }
+
+    return {
+        consentMode: (options.accept ? ConsentMode.Accept : ConsentMode.Noop),
+        targetUrls: targetUrls
+    };
+}
+
+const options = program.opts();
+const validatedArgs = validateArgs(options);
+
+console.log(validatedArgs);
+
+const consent_accept_selectors: Map<string, string> = new Map([
     ["google", "#L2AGLb"],
     // ["onetrust-cookiepro", "#onetrust-accept-btn-handler"],
     // ["onetrust-enterprise", "#accept-recommended-btn-handler"],
@@ -37,7 +124,7 @@ const crawler = new PlaywrightCrawler({
 
     // Stop crawling after several pages
     maxRequestsPerCrawl: 50,
-    
+
     // This function will be called for each URL to crawl.
     // Here you can write the Playwright scripts you are familiar with,
     // with the exception that browsers and pages are automatically managed by Crawlee.
@@ -46,7 +133,7 @@ const crawler = new PlaywrightCrawler({
     // - request: an instance of the Request class with information such as URL and HTTP method
     // - page: Playwright's Page object (see https://playwright.dev/docs/api/class-page)
     async requestHandler({ request, page, enqueueLinks, log }) {
-        await CrawlAccept(page,log);
+        await CrawlAccept(page, log);
         log.info(`Processing ${request.url}...`);
 
         // A function to be evaluated by Playwright within the browser context.
@@ -64,7 +151,7 @@ const crawler = new PlaywrightCrawler({
 
             return scrapedData;
         });
-        
+
         // Store the results to the default dataset.
         await Dataset.pushData(data);
 
@@ -91,16 +178,16 @@ console.log('Crawler finished.');
 
 await crawler.run(startUrls);
 
-async function CrawlAccept(page:Page, log:Log){
+async function CrawlAccept(page: Page, log: Log) {
     await consent_accept_selectors.forEach(async selector => {
-            const locators = await page.locator(selector).all();
-            if(locators.length > 0){
-                log.info(`consent button found for ${selector}`);
-                locators.forEach(async locator => await locator.click());
-            }else{
-                log.info(`consent button not found for ${selector}`);
-            }
+        const locators = await page.locator(selector).all();
+        if (locators.length > 0) {
+            log.info(`consent button found for ${selector}`);
+            locators.forEach(async locator => await locator.click());
+        } else {
+            log.info(`consent button not found for ${selector}`);
+        }
     });
-    return page.screenshot({path: 'after-consent.png'});
+    return page.screenshot({ path: 'after-consent.png' });
 }
 
