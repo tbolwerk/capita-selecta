@@ -261,3 +261,4 @@ accepteren
 accepteer cookies
 alles accepteren
 alles accepteren en doorgaan
+ik ga akkoord

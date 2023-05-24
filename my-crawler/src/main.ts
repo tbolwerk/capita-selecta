@@ -16,10 +16,9 @@ const __dirname = path.dirname(__filename);
 
 const program = new Command();
 
-// TODO: change to 10 seconds
-const WAIT_DURATION = 2000
+const WAIT_DURATION = 10000
 
-const selectors = ['a', 'button', 'span', 'form', 'p'];
+const selectors = ['a', 'button', 'div', 'span', 'form', 'p'];
 const acceptWords = readFileSync(join(__dirname, 'accept_words.txt'), 'utf-8').split(/\r?\n/);
 
 program
@@ -116,7 +115,13 @@ const crawler = new PlaywrightCrawler({
     },
 
     // Stop crawling after several pages
-    maxRequestsPerCrawl: 1,
+    maxRequestsPerCrawl: 500,
+
+    // Minimum parallel sessions
+    minConcurrency: 1,
+
+    // Maximum parallel sessions
+    maxConcurrency: 10,
 
     // This function will be called for each URL to crawl.
     // Here you can write the Playwright scripts you are familiar with,
@@ -133,7 +138,12 @@ const crawler = new PlaywrightCrawler({
         // Only accept cookies when the consent mode says so
         if (validatedArgs.consentMode == ConsentMode.Accept) {
             page.screenshot({ path: domain.concat('_accept_pre_consent.png') });
-            await CrawlAccept(page, log, domain);
+
+            let accepted = await CrawlAccept(page, log, domain);
+            if (!accepted) {
+                console.log('No consent dialog found for ' + domain + '. TODO: verify if this is true.');
+            }
+
             await sleep(WAIT_DURATION);
             await page.screenshot({ path: domain.concat('_accept_post_consent.png') });
 
@@ -193,19 +203,22 @@ async function CrawlAccept(page: Page, log: Log, domain: string) {
         selector = selector.or(page.locator('css=' + selectors[i] + ':visible'));
     }
 
-    let elems = await selector.all();
-    await elems.forEach(async elem => {
-        let text = (await elem.innerText()).replace('✓›!\n', '').toLowerCase();
+    const elems = await selector.all();
+
+    for (const elem of elems) {
+        const text = (await elem.innerText()).replace('✓›!\n', '').toLowerCase();
 
         // Do we recognize this text as a typical consent dialog?
         if (acceptWords.includes(text)) {
             found = true;
-            console.log("Found text '" + text + "'")
+            console.log("Found text '" + text + "'");
             await elem.click();
-        }
-    });
 
-    if (!found) {
-        console.log('No consent dialog found for ' + domain + '. TODO: verify if this is true.');
+            // Note, maybe we shouldn't return yet, but some timeouts could be given of the
+            // consent accept reroutes us (so for now just stop loading the other elements).
+            return true;
+        }
     }
+
+    return false;
 }
