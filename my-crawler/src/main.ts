@@ -1,6 +1,7 @@
 // For more information, see https://crawlee.dev/
-import * as fs from "fs";
 import * as path from "path";
+import { join } from "path";
+import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 
 import { PlaywrightCrawler, ProxyConfiguration, Dataset } from 'crawlee';
@@ -10,7 +11,16 @@ import { Command } from 'commander'
 import { parse } from 'csv-parse';
 import { load } from 'csv-load-sync';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const program = new Command();
+
+// TODO: change to 10 seconds
+const WAIT_DURATION = 2000
+
+const selectors = ['a', 'button', 'span', 'form', 'p'];
+const acceptWords = readFileSync(join(__dirname, 'accept_words.txt'), 'utf-8').split(/\r?\n/);
 
 program
     .option('--accept', 'Run the crawler in accept mode.')
@@ -30,6 +40,10 @@ interface ValidatedArgs {
     targetUrls: Array<string>;
 }
 
+export const sleep = async (waitTime: number) =>
+    new Promise(resolve =>
+        setTimeout(resolve, waitTime));
+
 // Check whether the domain is already in URL form or needs to be prefixed with 'https://'.
 function toUrl(domain: string): string {
     if (domain.startsWith('https')) {
@@ -46,9 +60,6 @@ function getDomain(url: string): string {
 }
 
 function parseRankedDomainsCsv(filePath: string): string[] {
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-
     const csvFilePath = path.resolve(__dirname, '../'.concat(filePath));
     const domains = load(csvFilePath, {
         skip: ['tranco_rank']
@@ -94,29 +105,6 @@ const validatedArgs = validateArgs(options);
 
 console.log(validatedArgs);
 
-const consent_accept_selectors: Map<string, string> = new Map([
-    ["google", "#L2AGLb"],
-    // ["onetrust-cookiepro", "#onetrust-accept-btn-handler"],
-    // ["onetrust-enterprise", "#accept-recommended-btn-handler"],
-    // ["cookiebot", "#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll"],
-    // ["cookiehub", "button.ch2-allow-all-btn"],
-    // ["typo3-wacon", ".waconcookiemanagement .cookie-accept"],
-    // ["cookiefirst", "[data-cookiefirst-action='accept']"],
-    // ["osano", ".osano-cm-accept-all"],
-    // ["orejime", ".orejime-Button--save"],
-    // ["axeptio", "#axeptio_btn_acceptAll"],
-    // ["civic-uk-cookie-control", "#ccc-notify-accept"],
-    // ["usercentrics", "[data-testid='uc-accept-all-button']"],
-    // ["cookie-yes", "[data-cky-tag='accept-button']"],
-    // ["secure-privacy", ".evSpAcceptBtn"],
-    // ["quantcast", "#qc-cmp2-ui button[mode='primary']"],
-    // ["didomi", "#didomi-notice-agree-button"],
-    // ["trustarc-truste", "#truste-consent-button"],
-    // ["non-specific-custom", "#AcceptCookiesButton, #acceptCookies, .cookie-accept, #cookie-accept, .gdpr-cookie--accept-all, button[class*='accept'], button[id*='accept'], [class*='accept'], [id*='accept'], #cookiebanner button, [class*='cookie']"]
-]);
-
-
-const startUrls = ['https://google.nl'];
 // Create an instance of the PlaywrightCrawler class - a crawler
 // that automatically loads the URLs in headless Chrome / Playwright.
 const crawler = new PlaywrightCrawler({
@@ -128,7 +116,7 @@ const crawler = new PlaywrightCrawler({
     },
 
     // Stop crawling after several pages
-    maxRequestsPerCrawl: 50,
+    maxRequestsPerCrawl: 1,
 
     // This function will be called for each URL to crawl.
     // Here you can write the Playwright scripts you are familiar with,
@@ -140,10 +128,15 @@ const crawler = new PlaywrightCrawler({
     async requestHandler({ request, page, enqueueLinks, log }) {
         let domain = getDomain(request.url);
 
+        await sleep(WAIT_DURATION);
+
         // Only accept cookies when the consent mode says so
         if (validatedArgs.consentMode == ConsentMode.Accept) {
             page.screenshot({ path: domain.concat('_accept_pre_consent.png') });
             await CrawlAccept(page, log, domain);
+            await sleep(WAIT_DURATION);
+            await page.screenshot({ path: domain.concat('_accept_post_consent.png') });
+
         } else {
             await page.screenshot({ path: domain.concat('_noop.png') });
         }
@@ -182,25 +175,37 @@ const crawler = new PlaywrightCrawler({
     },
 });
 
-await crawler.addRequests(startUrls);
+await crawler.addRequests(validatedArgs.targetUrls);
 
 // Run the crawler and wait for it to finish.
 await crawler.run();
 
 console.log('Crawler finished.');
 
-await crawler.run(startUrls);
-
+// A function that will accept a consent dialogue on a page
+// Element roles are based on https://github.com/marty90/priv-accept/blob/main/priv-accept.py
+// accept_words.txt is based on https://github.com/marty90/priv-accept/blob/main/accept_words.txt
 async function CrawlAccept(page: Page, log: Log, domain: string) {
-    await consent_accept_selectors.forEach(async selector => {
-        const locators = await page.locator(selector).all();
-        if (locators.length > 0) {
-            log.info(`consent button found for ${selector}`);
-            locators.forEach(async locator => await locator.click());
-        } else {
-            log.info(`consent button not found for ${selector}`);
+    var found = false;
+    let selector = page.locator('css=' + selectors[0] + ':visible');
+
+    for (let i = 1; i < selectors.length; i++) {
+        selector = selector.or(page.locator('css=' + selectors[i] + ':visible'));
+    }
+
+    let elems = await selector.all();
+    await elems.forEach(async elem => {
+        let text = (await elem.innerText()).replace('✓›!\n', '').toLowerCase();
+
+        // Do we recognize this text as a typical consent dialog?
+        if (acceptWords.includes(text)) {
+            found = true;
+            console.log("Found text '" + text + "'")
+            await elem.click();
         }
     });
-    // TODO: wait 10sec.
-    return page.screenshot({ path: domain.concat('_accept_post_consent.png') });
+
+    if (!found) {
+        console.log('No consent dialog found for ' + domain + '. TODO: verify if this is true.');
+    }
 }
