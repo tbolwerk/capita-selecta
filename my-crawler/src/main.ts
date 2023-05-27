@@ -18,7 +18,7 @@ const program = new Command();
 
 const WAIT_DURATION = 10000
 
-const selectors = ['a', 'button', 'div', 'span', 'form', 'p'];
+const selectors = ['a', 'button', 'div', 'span', 'form', 'p', 'dialog'];
 const acceptWords = readFileSync(join(__dirname, 'accept_words.txt'), 'utf-8').split(/\r?\n/);
 
 program
@@ -121,7 +121,7 @@ const crawler = new PlaywrightCrawler({
     minConcurrency: 1,
 
     // Maximum parallel sessions
-    maxConcurrency: 10,
+    maxConcurrency: 6,
 
     // This function will be called for each URL to crawl.
     // Here you can write the Playwright scripts you are familiar with,
@@ -133,22 +133,22 @@ const crawler = new PlaywrightCrawler({
     async requestHandler({ request, page, enqueueLinks, log }) {
         let domain = getDomain(request.url);
 
-        await sleep(WAIT_DURATION);
+        await page.waitForTimeout(10000);
 
         // Only accept cookies when the consent mode says so
         if (validatedArgs.consentMode == ConsentMode.Accept) {
-            page.screenshot({ path: domain.concat('_accept_pre_consent.png') });
+            page.screenshot({ path: '../screenshots/' + domain.concat('_accept_pre_consent.png') });
 
             let accepted = await CrawlAccept(page, log, domain);
             if (!accepted) {
-                console.log('No consent dialog found for ' + domain + '. TODO: verify if this is true.');
+                log.info(`No consent dialog found for ${domain} TODO: verify if this is true.`);
             }
 
-            await sleep(WAIT_DURATION);
-            await page.screenshot({ path: domain.concat('_accept_post_consent.png') });
+            await page.waitForTimeout(10000);
+            await page.screenshot({ path: '../screenshots/' + domain.concat('_accept_post_consent.png') });
 
         } else {
-            await page.screenshot({ path: domain.concat('_noop.png') });
+            await page.screenshot({ path: '../screenshots/' + domain.concat('_noop.png') });
         }
         log.info(`Processing ${request.url}...`);
 
@@ -192,31 +192,58 @@ await crawler.run();
 
 console.log('Crawler finished.');
 
+// Sanitize the pass candidate word and check whether we recognize
+// it as acceptance word.
+function IsAcceptWord(word: String) {
+    const sanitizedWord = word.replace('✓›!\n', '').toLowerCase();
+    return acceptWords.includes(sanitizedWord);
+}
+
+function ConstructSelector(entity) {
+    let selector = entity.locator('css=' + selectors[0] + ':visible');
+
+    for (let i = 1; i < selectors.length; i++) {
+        selector = selector.or(entity.locator('css=' + selectors[i] + ':visible'));
+    }
+
+    return selector;
+}
+
 // A function that will accept a consent dialogue on a page
 // Element roles are based on https://github.com/marty90/priv-accept/blob/main/priv-accept.py
 // accept_words.txt is based on https://github.com/marty90/priv-accept/blob/main/accept_words.txt
 async function CrawlAccept(page: Page, log: Log, domain: string) {
-    var found = false;
-    let selector = page.locator('css=' + selectors[0] + ':visible');
-
-    for (let i = 1; i < selectors.length; i++) {
-        selector = selector.or(page.locator('css=' + selectors[i] + ':visible'));
-    }
-
+    let selector = ConstructSelector(page);
     const elems = await selector.all();
 
+    // Check the main page
     for (const elem of elems) {
-        const text = (await elem.innerText()).replace('✓›!\n', '').toLowerCase();
-
-        // Do we recognize this text as a typical consent dialog?
-        if (acceptWords.includes(text)) {
-            found = true;
-            console.log("Found text '" + text + "'");
+        let word = await elem.innerText();
+        if (IsAcceptWord(word)) {
+            log.info(`Found consent acceptance candidate '${word}' for ${domain}`);
             await elem.click();
 
             // Note, maybe we shouldn't return yet, but some timeouts could be given of the
             // consent accept reroutes us (so for now just stop loading the other elements).
             return true;
+        }
+    }
+
+    // Check embedded IFrames
+    for (const frame of page.frames()) {
+        let selector = ConstructSelector(frame);
+        const elems = await selector.all();
+
+        for (const elem of elems) {
+            let word = await elem.innerText();
+            if (IsAcceptWord(word)) {
+                log.info(`Found consent acceptance candidate '${word}' (in iFrame) for ${domain}`);
+                await elem.click();
+
+                // Note, maybe we shouldn't return yet, but some timeouts could be given of the
+                // consent accept reroutes us (so for now just stop loading the other elements).
+                return true;
+            }
         }
     }
 
