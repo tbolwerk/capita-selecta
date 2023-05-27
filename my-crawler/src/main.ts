@@ -5,7 +5,7 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 
 import { PlaywrightCrawler, ProxyConfiguration, Dataset } from 'crawlee';
-import { Page, selectors } from 'playwright';
+import { Page, Request, selectors } from 'playwright';
 import { Log } from '@apify/log';
 import { Command } from 'commander'
 import { parse } from 'csv-parse';
@@ -51,6 +51,11 @@ function toUrl(domain: string): string {
     else {
         return 'https://'.concat(domain);
     }
+}
+
+async function interceptRequest(request:Request) {
+    const response = await  request.response();
+    await Dataset.pushData({request: request, response: response});
 }
 
 function getDomain(url: string): string {
@@ -101,7 +106,6 @@ function validateArgs(options): ValidatedArgs {
 
 const options = program.opts();
 const validatedArgs = validateArgs(options);
-
 console.log(validatedArgs);
 
 // Create an instance of the PlaywrightCrawler class - a crawler
@@ -132,7 +136,13 @@ const crawler = new PlaywrightCrawler({
     // - page: Playwright's Page object (see https://playwright.dev/docs/api/class-page)
     async requestHandler({ request, page, enqueueLinks, log }) {
         let domain = getDomain(request.url);
-
+        // # Issue 7
+        // Crawler intercepts and save HTTP request and response in Dataset.
+        // Not sure if headers only is enough? await data.text() throws errors for response..?
+        page.on("response", async data => await Dataset.pushData({ response: {headers: (await data.allHeaders())}}));
+        page.on("request", async data => await Dataset.pushData({ request: (await data.allHeaders())}));
+       
+        // await Dataset.pushData({request: interceptRequest, response: interceptResponse});
         await page.waitForTimeout(10000);
 
         // Only accept cookies when the consent mode says so
@@ -147,29 +157,14 @@ const crawler = new PlaywrightCrawler({
             await page.waitForTimeout(10000);
             await page.screenshot({ path: '../screenshots/' + domain.concat('_accept_post_consent.png') });
 
-        } else {
+        }else if(validatedArgs.consentMode == ConsentMode.Noop){ // # Issue 2 crawler must not accept cookies or decline
+            await page.screenshot({ path: '../screenshots/' + domain.concat('_noop.png') });
+        } else { // default to noop
             await page.screenshot({ path: '../screenshots/' + domain.concat('_noop.png') });
         }
+
+
         log.info(`Processing ${request.url}...`);
-
-        // A function to be evaluated by Playwright within the browser context.
-        const data = await page.$$eval('.athing', ($posts) => {
-            const scrapedData: { title: string; rank: string; href: string }[] = [];
-
-            // We're getting the title, rank and URL of each post on Hacker News.
-            $posts.forEach(($post) => {
-                scrapedData.push({
-                    title: $post.querySelector('.title a').innerText,
-                    rank: $post.querySelector('.rank').innerText,
-                    href: $post.querySelector('.title a').href,
-                });
-            });
-
-            return scrapedData;
-        });
-
-        // Store the results to the default dataset.
-        await Dataset.pushData(data);
 
         // Find a link to the next page and enqueue it if it exists.
         const infos = await enqueueLinks({
