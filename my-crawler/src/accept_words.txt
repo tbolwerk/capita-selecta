@@ -273,3 +273,7 @@ accept all & visit the site
 accept additional cookies
 yes i agree
 count me in
+accept all analytics cookies
+todo el mundo es el aceptador
+activate cookies
+agree and proceed with standard settings
