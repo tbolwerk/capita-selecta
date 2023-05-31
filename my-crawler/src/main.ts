@@ -10,6 +10,8 @@ import { Log } from '@apify/log';
 import { Command } from 'commander'
 import { parse } from 'csv-parse';
 import { load } from 'csv-load-sync';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -70,6 +72,15 @@ function parseRankedDomainsCsv(filePath: string): string[] {
     });
 
     return domains;
+}
+
+function writePageVisitInfoToFile(info: string, domain: string) {
+    let fs = require('fs');
+    fs.writeFile(`../data/${domain}.json`, info, function(err){
+        if (err) {
+            console.error(err);
+        }
+    })
 }
 
 // Validate the command line arguments passed to the script and return a
@@ -135,13 +146,16 @@ const crawler = new PlaywrightCrawler({
     // - request: an instance of the Request class with information such as URL and HTTP method
     // - page: Playwright's Page object (see https://playwright.dev/docs/api/class-page)
     async requestHandler({ request, page, enqueueLinks, log }) {
+        let pageload_start_ts = Date.now();
+        let requestList: Object[] = [];
+
         let domain = getDomain(request.url);
         // # Issue 7
         // Crawler intercepts and save HTTP request and response in Dataset.
         // Not sure if headers only is enough? await data.text() throws errors for response..?
         page.on("response", async data => await Dataset.pushData({ response: {headers: (await data.allHeaders())}}));
         page.on("request", async data => await Dataset.pushData({ request: (await data.allHeaders())}));
-       
+        page.on("request", async data => requestList.push(await data.allHeaders()));
         // await Dataset.pushData({request: interceptRequest, response: interceptResponse});
         await page.waitForTimeout(10000);
 
@@ -172,6 +186,17 @@ const crawler = new PlaywrightCrawler({
         });
 
         if (infos.processedRequests.length === 0) log.info(`${request.url} is the last page!`);
+        let pageload_end_ts = Date.now();
+
+        let page_visit_info = {
+            website_domain: "https://" + domain,
+            post_pageload_url: request.loadedUrl,
+            pageload_start_ts: pageload_start_ts,
+            pageload_end_ts: pageload_end_ts,
+            requests: requestList           
+        }
+
+        writePageVisitInfoToFile(JSON.stringify(page_visit_info), domain);
     },
 
     // This function is called if the page processing failed more than maxRequestRetries+1 times.
