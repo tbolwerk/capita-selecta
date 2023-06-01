@@ -116,6 +116,10 @@ function parseRankedDomainsCsv(filePath: string): string[] {
 
 class DataSet{
     private fs = require('fs');
+    private folder: string;
+    constructor(folder){
+        this.folder = folder;
+    }
     private writeToFile(data: string, filename: string){
         this.fs.writeFile(filename, data, function(err){
             if (err) {
@@ -125,11 +129,11 @@ class DataSet{
     }
     
     public writePageVisitInfoToFile(info: string, domain: string) {
-        this.writeToFile(info, `${domain}.json`);
+        this.writeToFile(info, `${this.folder}/${domain}.json`);
     }
 
     public pushData(data){
-        this.writeToFile(JSON.stringify(data), `${Date.now()}.json`)
+        this.writeToFile(JSON.stringify(data), `${this.folder}/${Date.now()}.json`)
     }
 }
 
@@ -167,7 +171,7 @@ function validateArgs(options): ValidatedArgs {
 }
 
 const options = program.opts();
-const Dataset = new DataSet();
+const Dataset = new DataSet("");
 const validatedArgs = validateArgs(options);
 console.log(validatedArgs);
 
