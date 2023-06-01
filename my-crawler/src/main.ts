@@ -4,9 +4,11 @@ import { join } from "path";
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 
-import { PlaywrightCrawler, ProxyConfiguration, Dataset } from 'crawlee';
-import { Page, Request, selectors } from 'playwright';
-import { Log } from '@apify/log';
+// import { PlaywrightCrawler, ProxyConfiguration, Dataset } from 'crawlee';
+import { PlaywrightCrawler } from "./crawler";
+
+// Import the Chromium browser into our scraper.
+import { chromium, Browser, Page ,Request, selectors  } from 'playwright';
 import { Command } from 'commander'
 import { parse } from 'csv-parse';
 import { load } from 'csv-load-sync';
@@ -41,6 +43,44 @@ interface ValidatedArgs {
     targetUrls: Array<string>;
 }
 
+
+class PlaywrightCrawler{
+    private browser!: Browser;
+    private headless!:boolean;
+    private requestHandler: (page: Page) => void;
+    private links :string[] = [];
+    constructor(headless: boolean, requestHandler: (page: Page) => void){
+        this.headless = headless;
+        this.requestHandler = requestHandler;
+    }
+
+    public addRequests(links: string[]){
+        this.links = links;
+    }
+    public async run(){
+        this.browser = await chromium.launch({
+            headless: this.headless, logger: {
+                isEnabled: (name, severity) => name === 'browser',
+                log: (name, severity, message, args) => console.log(`${severity}::${name} ${message}`)
+              }
+        });
+        
+        
+        this.links.forEach(async link => {
+            const page = await this.browser.newPage({     
+                // We have to add this flag to enable JavaScript execution
+                // on GitHub. waitForFunction() would not work otherwise.
+                                                    bypassCSP: true
+                                                    });
+            await page.goto(link);
+            await this.requestHandler(page);
+            // Turn off the browser to clean up after ourselves.
+            await this.browser.close();
+        });
+    }
+}
+
+
 export const sleep = async (waitTime: number) =>
     new Promise(resolve =>
         setTimeout(resolve, waitTime));
@@ -55,10 +95,10 @@ function toUrl(domain: string): string {
     }
 }
 
-async function interceptRequest(request:Request) {
-    const response = await  request.response();
-    await Dataset.pushData({request: request, response: response});
-}
+// async function interceptRequest(request:Request) {
+//     const response = await  request.response();
+//     await Dataset.pushData({request: request, response: response});
+// }
 
 function getDomain(url: string): string {
     let domain = (new URL(url));
@@ -121,41 +161,15 @@ console.log(validatedArgs);
 
 // Create an instance of the PlaywrightCrawler class - a crawler
 // that automatically loads the URLs in headless Chrome / Playwright.
-const crawler = new PlaywrightCrawler({
-    launchContext: {
-        // Here you can set options that are passed to the playwright .launch() function.
-        launchOptions: {
-            headless: true,
-        },
-    },
-
-    // Stop crawling after several pages
-    maxRequestsPerCrawl: 500,
-
-    // Minimum parallel sessions
-    minConcurrency: 1,
-
-    // Maximum parallel sessions
-    maxConcurrency: 6,
-
-    // This function will be called for each URL to crawl.
-    // Here you can write the Playwright scripts you are familiar with,
-    // with the exception that browsers and pages are automatically managed by Crawlee.
-    // The function accepts a single parameter, which is an object with a lot of properties,
-    // the most important being:
-    // - request: an instance of the Request class with information such as URL and HTTP method
-    // - page: Playwright's Page object (see https://playwright.dev/docs/api/class-page)
-    async requestHandler({ request, page, enqueueLinks, log }) {
-        let pageload_start_ts = Date.now();
-        let requestList: Object[] = [];
-
-        let domain = getDomain(request.url);
+const crawler = new PlaywrightCrawler(true,
+    async (page:Page) => {
+        let domain = getDomain(page.url());
         // # Issue 7
         // Crawler intercepts and save HTTP request and response in Dataset.
         // Not sure if headers only is enough? await data.text() throws errors for response..?
-        page.on("response", async data => await Dataset.pushData({ response: {headers: (await data.allHeaders())}}));
-        page.on("request", async data => await Dataset.pushData({ request: (await data.allHeaders())}));
-        page.on("request", async data => requestList.push(await data.allHeaders()));
+        // page.on("response", async data => await Dataset.pushData({ response: {headers: (await data.allHeaders())}}));
+        // page.on("request", async data => await Dataset.pushData({ request: (await data.allHeaders())}));
+       
         // await Dataset.pushData({request: interceptRequest, response: interceptResponse});
         await page.waitForTimeout(10000);
 
@@ -163,9 +177,9 @@ const crawler = new PlaywrightCrawler({
         if (validatedArgs.consentMode == ConsentMode.Accept) {
             page.screenshot({ path: '../screenshots/' + domain.concat('_accept_pre_consent.png') });
 
-            let accepted = await CrawlAccept(page, log, domain);
+            let accepted = await CrawlAccept(page, domain);
             if (!accepted) {
-                log.info(`No consent dialog found for ${domain} TODO: verify if this is true.`);
+                console.info(`No consent dialog found for ${domain} TODO: verify if this is true.`);
             }
 
             await page.waitForTimeout(10000);
@@ -178,31 +192,17 @@ const crawler = new PlaywrightCrawler({
         }
 
 
-        log.info(`Processing ${request.url}...`);
+        console.info(`Processing ${page.url()}...`);
 
-        // Find a link to the next page and enqueue it if it exists.
-        const infos = await enqueueLinks({
-            selector: '.morelink',
-        });
-
-        if (infos.processedRequests.length === 0) log.info(`${request.url} is the last page!`);
         let pageload_end_ts = Date.now();
-
         let page_visit_info = {
             website_domain: "https://" + domain,
-            post_pageload_url: request.loadedUrl,
-            pageload_start_ts: pageload_start_ts,
+            post_pageload_url: page.url(),
+            pageload_start_ts: "",//TODO: fix this
             pageload_end_ts: pageload_end_ts,
-            requests: requestList           
+            requests: ""//TODO: fix this
         }
-
         writePageVisitInfoToFile(JSON.stringify(page_visit_info), domain);
-    },
-
-    // This function is called if the page processing failed more than maxRequestRetries+1 times.
-    failedRequestHandler({ request, log }) {
-        log.info(`Request ${request.url} failed too many times.`);
-    },
 });
 
 await crawler.addRequests(validatedArgs.targetUrls);
@@ -232,7 +232,7 @@ function ConstructSelector(entity) {
 // A function that will accept a consent dialogue on a page
 // Element roles are based on https://github.com/marty90/priv-accept/blob/main/priv-accept.py
 // accept_words.txt is based on https://github.com/marty90/priv-accept/blob/main/accept_words.txt
-async function CrawlAccept(page: Page, log: Log, domain: string) {
+async function CrawlAccept(page: Page, domain: string) {
     let selector = ConstructSelector(page);
     const elems = await selector.all();
 
@@ -240,7 +240,7 @@ async function CrawlAccept(page: Page, log: Log, domain: string) {
     for (const elem of elems) {
         let word = await elem.innerText();
         if (IsAcceptWord(word)) {
-            log.info(`Found consent acceptance candidate '${word}' for ${domain}`);
+            console.info(`Found consent acceptance candidate '${word}' for ${domain}`);
             await elem.click();
 
             // Note, maybe we shouldn't return yet, but some timeouts could be given of the
@@ -257,7 +257,7 @@ async function CrawlAccept(page: Page, log: Log, domain: string) {
         for (const elem of elems) {
             let word = await elem.innerText();
             if (IsAcceptWord(word)) {
-                log.info(`Found consent acceptance candidate '${word}' (in iFrame) for ${domain}`);
+                console.info(`Found consent acceptance candidate '${word}' (in iFrame) for ${domain}`);
                 await elem.click();
 
                 // Note, maybe we shouldn't return yet, but some timeouts could be given of the
