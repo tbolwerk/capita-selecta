@@ -4,3 +4,4 @@ node_modules/
 /playwright/.cache/
 *.png
 src/*.json
+*.json
