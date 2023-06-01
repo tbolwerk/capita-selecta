@@ -4,9 +4,6 @@ import { join } from "path";
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 
-// import { PlaywrightCrawler, ProxyConfiguration, Dataset } from 'crawlee';
-import { PlaywrightCrawler } from "./crawler";
-
 // Import the Chromium browser into our scraper.
 import { chromium, Browser, Page ,Request, selectors  } from 'playwright';
 import { Command } from 'commander'
@@ -193,19 +190,9 @@ const crawler = new PlaywrightCrawler(true,
 
 
         console.info(`Processing ${page.url()}...`);
+    });
 
-        let pageload_end_ts = Date.now();
-        let page_visit_info = {
-            website_domain: "https://" + domain,
-            post_pageload_url: page.url(),
-            pageload_start_ts: "",//TODO: fix this
-            pageload_end_ts: pageload_end_ts,
-            requests: ""//TODO: fix this
-        }
-        writePageVisitInfoToFile(JSON.stringify(page_visit_info), domain);
-});
-
-await crawler.addRequests(validatedArgs.targetUrls);
+crawler.addRequests(validatedArgs.targetUrls);
 
 // Run the crawler and wait for it to finish.
 await crawler.run();
