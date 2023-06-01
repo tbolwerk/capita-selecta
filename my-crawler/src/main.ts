@@ -1,8 +1,11 @@
 // For more information, see https://crawlee.dev/
 import * as path from "path";
 import { join } from "path";
-import { readFileSync } from 'fs';
+import { readFileSync, write } from 'fs';
 import { fileURLToPath } from 'url';
+
+// import { PlaywrightCrawler, ProxyConfiguration, Dataset } from 'crawlee';
+import { PlaywrightCrawler } from "./crawler";
 
 // Import the Chromium browser into our scraper.
 import { chromium, Browser, Page ,Request, selectors  } from 'playwright';
@@ -92,10 +95,10 @@ function toUrl(domain: string): string {
     }
 }
 
-// async function interceptRequest(request:Request) {
-//     const response = await  request.response();
-//     await Dataset.pushData({request: request, response: response});
-// }
+async function interceptRequest(request:Request) {
+    const response = await  request.response();
+    Dataset.pushData({request: request, response: response});
+}
 
 function getDomain(url: string): string {
     let domain = (new URL(url));
@@ -111,14 +114,25 @@ function parseRankedDomainsCsv(filePath: string): string[] {
     return domains;
 }
 
-function writePageVisitInfoToFile(info: string, domain: string) {
-    let fs = require('fs');
-    fs.writeFile(`../data/${domain}.json`, info, function(err){
-        if (err) {
-            console.error(err);
-        }
-    })
+class DataSet{
+    private fs = require('fs');
+    private writeToFile(data: string, filename: string){
+        this.fs.writeFile(filename, data, function(err){
+            if (err) {
+                console.error(err);
+            }
+        })
+    }
+    
+    public writePageVisitInfoToFile(info: string, domain: string) {
+        this.writeToFile(info, `${domain}.json`);
+    }
+
+    public pushData(data){
+        this.writeToFile(JSON.stringify(data), `${Date.now()}.json`)
+    }
 }
+
 
 // Validate the command line arguments passed to the script and return a
 // ValidatedArgs instance when successfull or exit the program otherwise.
@@ -153,6 +167,7 @@ function validateArgs(options): ValidatedArgs {
 }
 
 const options = program.opts();
+const Dataset = new DataSet();
 const validatedArgs = validateArgs(options);
 console.log(validatedArgs);
 
@@ -160,13 +175,15 @@ console.log(validatedArgs);
 // that automatically loads the URLs in headless Chrome / Playwright.
 const crawler = new PlaywrightCrawler(true,
     async (page:Page) => {
+        let pageload_start_ts = Date.now();
+        let requestList: Object[] = [];
         let domain = getDomain(page.url());
-        // # Issue 7
+        // # Issue 7 TODO: Fix this, creat Dataset
         // Crawler intercepts and save HTTP request and response in Dataset.
         // Not sure if headers only is enough? await data.text() throws errors for response..?
-        // page.on("response", async data => await Dataset.pushData({ response: {headers: (await data.allHeaders())}}));
-        // page.on("request", async data => await Dataset.pushData({ request: (await data.allHeaders())}));
-       
+        page.on("response", async data =>  Dataset.pushData({ response: {headers: (await data.allHeaders())}}));
+        page.on("request", async data =>  Dataset.pushData({ request: (await data.allHeaders())}));
+        page.on("request", async data => requestList.push(await data.allHeaders()));
         // await Dataset.pushData({request: interceptRequest, response: interceptResponse});
         await page.waitForTimeout(10000);
 
@@ -187,12 +204,22 @@ const crawler = new PlaywrightCrawler(true,
         } else { // default to noop
             await page.screenshot({ path: '../screenshots/' + domain.concat('_noop.png') });
         }
+        let pageload_end_ts = Date.now();
 
+        let page_visit_info = {
+            website_domain: "https://" + domain,
+            post_pageload_url: page.url(),
+            pageload_start_ts: pageload_start_ts,
+            pageload_end_ts: pageload_end_ts,
+            requests: requestList           
+        }
+
+        Dataset.writePageVisitInfoToFile(JSON.stringify(page_visit_info), domain);
 
         console.info(`Processing ${page.url()}...`);
     });
 
-crawler.addRequests(validatedArgs.targetUrls);
+await crawler.addRequests(validatedArgs.targetUrls);
 
 // Run the crawler and wait for it to finish.
 await crawler.run();
