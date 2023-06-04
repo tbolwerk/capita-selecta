@@ -1,4 +1,9 @@
-# How to run
+# Browser automation lib
+We used Playwright
+
+
+
+# Instruction on how to run
 
 Ensure that Node 16 >= is installed
 
