@@ -95,11 +95,6 @@ function toUrl(domain: string): string {
     }
 }
 
-async function interceptRequest(request:Request) {
-    const response = await  request.response();
-    Dataset.pushData({request: request, response: response});
-}
-
 function getDomain(url: string): string {
     let domain = (new URL(url));
     return domain.hostname.replace('www.', '');
@@ -117,9 +112,10 @@ function parseRankedDomainsCsv(filePath: string): string[] {
 class DataSet{
     private fs = require('fs');
     private folder: string;
-    constructor(folder){
+    constructor(folder: string){
         this.folder = folder;
     }
+    
     private writeToFile(data: string, filename: string){
         this.fs.writeFile(filename, data, function(err){
             if (err) {
@@ -127,13 +123,31 @@ class DataSet{
             }
         })
     }
-    
+    private appendToFile(data: string, filename:string): boolean{
+        this.fs.appendFile(filename, data, function(err){
+            if(err){
+                console.error(err);
+                return false;
+            }else{
+                return true;
+            }
+        });
+        return true;
+    }
     public writePageVisitInfoToFile(info: string, domain: string, consent_mode: string) {
         this.writeToFile(info, `${this.folder}/${domain}_${consent_mode}.json`);
     }
 
-    public pushData(data){
-        this.writeToFile(JSON.stringify(data), `${this.folder}/${Date.now()}.json`)
+    public pushData(data,requestURL, filename:string){
+        const now = Date.now();
+        const formattedData = JSON.stringify({requestURL: requestURL,
+                               timestamp: now,
+                               headers: JSON.stringify(data).substring(0, 512)});
+        
+
+        if(!this.appendToFile(`${formattedData}\n`, `${this.folder}/${filename}`)){
+            this.writeToFile(formattedData, `${this.folder}/${filename}`);
+        }
     }
 }
 
@@ -171,7 +185,7 @@ function validateArgs(options): ValidatedArgs {
 }
 
 const options = program.opts();
-const Dataset = new DataSet("../crawl_data");
+const Dataset = new DataSet('crawl_data/');
 const validatedArgs = validateArgs(options);
 console.log(validatedArgs);
 
@@ -185,15 +199,15 @@ const crawler = new PlaywrightCrawler(true,
         // # Issue 7 TODO: Fix this, creat Dataset
         // Crawler intercepts and save HTTP request and response in Dataset.
         // Not sure if headers only is enough? await data.text() throws errors for response..?
-        page.on("response", async data =>  Dataset.pushData({ response: {headers: (await data.allHeaders())}}));
-        page.on("request", async data =>  Dataset.pushData({ request: (await data.allHeaders())}));
+        page.on("response", async data =>  Dataset.pushData({ response: {headers: (await data.allHeaders())}},page.url(),"pages.json"));
+        page.on("request", async data =>  Dataset.pushData({ request: (await data.allHeaders())},page.url(),"pages.json"));
         page.on("request", async data => requestList.push(await data.allHeaders()));
         // await Dataset.pushData({request: interceptRequest, response: interceptResponse});
         await page.waitForTimeout(10000);
 
         // Only accept cookies when the consent mode says so
         if (validatedArgs.consentMode == ConsentMode.Accept) {
-            page.screenshot({ path: '../crawl_data/' + domain.concat('_accept_pre_consent.png') });
+            page.screenshot({ path: "crawl_data/" + domain.concat('_accept_pre_consent.png') });
 
             let accepted = await CrawlAccept(page, domain);
             if (!accepted) {
@@ -201,12 +215,12 @@ const crawler = new PlaywrightCrawler(true,
             }
 
             await page.waitForTimeout(10000);
-            await page.screenshot({ path: '../crawl_data/' + domain.concat('_accept_post_consent.png') });
+            await page.screenshot({ path:  "crawl_data/" +domain.concat('_accept_post_consent.png') });
 
         }else if(validatedArgs.consentMode == ConsentMode.Noop){ // # Issue 2 crawler must not accept cookies or decline
-            await page.screenshot({ path: '../crawl_data/' + domain.concat('_noop.png') });
+            await page.screenshot({ path:  "crawl_data/" +domain.concat('_noop.png') });
         } else { // default to noop
-            await page.screenshot({ path: '../crawl_data/' + domain.concat('_noop.png') });
+            await page.screenshot({ path:  "crawl_data/" +domain.concat('_noop.png') });
         }
         let pageload_end_ts = Date.now();
 
