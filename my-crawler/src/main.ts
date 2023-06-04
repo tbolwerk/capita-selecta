@@ -128,8 +128,8 @@ class DataSet{
         })
     }
     
-    public writePageVisitInfoToFile(info: string, domain: string) {
-        this.writeToFile(info, `${this.folder}/${domain}.json`);
+    public writePageVisitInfoToFile(info: string, domain: string, consent_mode: string) {
+        this.writeToFile(info, `${this.folder}/${domain}_${consent_mode}.json`);
     }
 
     public pushData(data){
@@ -171,7 +171,7 @@ function validateArgs(options): ValidatedArgs {
 }
 
 const options = program.opts();
-const Dataset = new DataSet("");
+const Dataset = new DataSet("../crawl_data");
 const validatedArgs = validateArgs(options);
 console.log(validatedArgs);
 
@@ -193,7 +193,7 @@ const crawler = new PlaywrightCrawler(true,
 
         // Only accept cookies when the consent mode says so
         if (validatedArgs.consentMode == ConsentMode.Accept) {
-            page.screenshot({ path: '../screenshots/' + domain.concat('_accept_pre_consent.png') });
+            page.screenshot({ path: '../crawl_data/' + domain.concat('_accept_pre_consent.png') });
 
             let accepted = await CrawlAccept(page, domain);
             if (!accepted) {
@@ -201,12 +201,12 @@ const crawler = new PlaywrightCrawler(true,
             }
 
             await page.waitForTimeout(10000);
-            await page.screenshot({ path: '../screenshots/' + domain.concat('_accept_post_consent.png') });
+            await page.screenshot({ path: '../crawl_data/' + domain.concat('_accept_post_consent.png') });
 
         }else if(validatedArgs.consentMode == ConsentMode.Noop){ // # Issue 2 crawler must not accept cookies or decline
-            await page.screenshot({ path: '../screenshots/' + domain.concat('_noop.png') });
+            await page.screenshot({ path: '../crawl_data/' + domain.concat('_noop.png') });
         } else { // default to noop
-            await page.screenshot({ path: '../screenshots/' + domain.concat('_noop.png') });
+            await page.screenshot({ path: '../crawl_data/' + domain.concat('_noop.png') });
         }
         let pageload_end_ts = Date.now();
 
@@ -218,9 +218,10 @@ const crawler = new PlaywrightCrawler(true,
             requests: requestList           
         }
 
-        Dataset.writePageVisitInfoToFile(JSON.stringify(page_visit_info), domain);
+        Dataset.writePageVisitInfoToFile(JSON.stringify(page_visit_info), domain, validatedArgs.consentMode==0 ? 'accept': 'noop');
 
         console.info(`Processing ${page.url()}...`);
+        console.log("consent mode: " + validatedArgs.consentMode);
     });
 
 await crawler.addRequests(validatedArgs.targetUrls);
