@@ -1,14 +1,13 @@
-// For more information, see https://crawlee.dev/
 import * as path from "path";
 import { join } from "path";
 import { readFileSync, write } from 'fs';
 import { fileURLToPath } from 'url';
 
-// import { PlaywrightCrawler, ProxyConfiguration, Dataset } from 'crawlee';
+// import { PlaywrightCrawler} from 'crawlee';
 import { PlaywrightCrawler } from "./crawler";
 
 // Import the Chromium browser into our scraper.
-import { chromium, Browser, Page ,Request, selectors  } from 'playwright';
+import { chromium, Browser, Page, Request, selectors } from 'playwright';
 import { Command } from 'commander'
 import { parse } from 'csv-parse';
 import { load } from 'csv-load-sync';
@@ -47,28 +46,28 @@ interface ValidatedArgs {
 }
 
 
-class PlaywrightCrawler{
+class PlaywrightCrawler {
     private browser!: Browser;
-    private headless!:boolean;
+    private headless!: boolean;
     private requestHandler: (page: Page) => void;
-    private links :string[] = [];
-    constructor(headless: boolean, requestHandler: (page: Page) => void){
+    private links: string[] = [];
+    constructor(headless: boolean, requestHandler: (page: Page) => void) {
         this.headless = headless;
         this.requestHandler = requestHandler;
     }
 
-    public addRequests(links: string[]){
+    public addRequests(links: string[]) {
         this.links = links;
     }
-    public async run(){
+    public async run() {
         this.browser = await chromium.launch({
             headless: this.headless, logger: {
                 isEnabled: (name, severity) => name === 'browser',
                 log: (name, severity, message, args) => console.log(`${severity}::${name} ${message}`)
-              }
+            }
         });
-        
-        
+
+
         this.links.forEach(async link => {
             const page = await this.browser.newPage({
                 // We have to add this flag to enable JavaScript execution
@@ -91,7 +90,7 @@ class PlaywrightCrawler{
                     console.error("DNS error occured: ", error);
                     validatedArgs.consentMode == ConsentMode.Accept ? analysis.incrementDNSErrorAccept() : analysis.incrementDNSErrorNoop();
                 }
-            } 
+            }
             await this.requestHandler(page);
             // Turn off the browser to clean up after ourselves.
             await this.browser.close();
@@ -128,26 +127,26 @@ function parseRankedDomainsCsv(filePath: string): string[] {
     return domains;
 }
 
-class DataSet{
+class DataSet {
     private fs = require('fs');
     private folder: string;
-    constructor(folder: string){
+    constructor(folder: string) {
         this.folder = folder;
     }
-    
-    private writeToFile(data: string, filename: string){
-        this.fs.writeFile(filename, data, function(err){
+
+    private writeToFile(data: string, filename: string) {
+        this.fs.writeFile(filename, data, function (err) {
             if (err) {
                 console.error(err);
             }
         })
     }
-    private appendToFile(data: string, filename:string): boolean{
-        this.fs.appendFile(filename, data, function(err){
-            if(err){
+    private appendToFile(data: string, filename: string): boolean {
+        this.fs.appendFile(filename, data, function (err) {
+            if (err) {
                 console.error(err);
                 return false;
-            }else{
+            } else {
                 return true;
             }
         });
@@ -157,14 +156,16 @@ class DataSet{
         this.writeToFile(info, `${this.folder}/${domain}_${consent_mode}.json`);
     }
 
-    public pushData(data,requestURL, filename:string){
+    public pushData(data, requestURL, filename: string) {
         const now = Date.now();
-        const formattedData = JSON.stringify({requestURL: requestURL,
-                               timestamp: now,
-                               headers: JSON.stringify(data).substring(0, 512)});
-        
+        const formattedData = JSON.stringify({
+            requestURL: requestURL,
+            timestamp: now,
+            headers: JSON.stringify(data).substring(0, 512)
+        });
 
-        if(!this.appendToFile(`${formattedData}\n`, `${this.folder}/${filename}`)){
+
+        if (!this.appendToFile(`${formattedData}\n`, `${this.folder}/${filename}`)) {
             this.writeToFile(formattedData, `${this.folder}/${filename}`);
         }
     }
@@ -211,15 +212,15 @@ console.log(validatedArgs);
 // Create an instance of the PlaywrightCrawler class - a crawler
 // that automatically loads the URLs in headless Chrome / Playwright.
 const crawler = new PlaywrightCrawler(true,
-    async (page:Page) => {
+    async (page: Page) => {
         let pageload_start_ts = Date.now();
         let requestList: Object[] = [];
         let domain = getDomain(page.url());
         // # Issue 7 TODO: Fix this, creat Dataset
         // Crawler intercepts and save HTTP request and response in Dataset.
         // Not sure if headers only is enough? await data.text() throws errors for response..?
-        page.on("response", async data =>  Dataset.pushData({ response: {headers: (await data.allHeaders())}},page.url(),"pages.json"));
-        page.on("request", async data =>  Dataset.pushData({ request: (await data.allHeaders())},page.url(),"pages.json"));
+        page.on("response", async data => Dataset.pushData({ response: { headers: (await data.allHeaders()) } }, page.url(), "pages.json"));
+        page.on("request", async data => Dataset.pushData({ request: (await data.allHeaders()) }, page.url(), "pages.json"));
         page.on("request", async data => requestList.push(await data.allHeaders()));
         // await Dataset.pushData({request: interceptRequest, response: interceptResponse});
         await page.waitForTimeout(10000);
@@ -235,12 +236,12 @@ const crawler = new PlaywrightCrawler(true,
             }
 
             await page.waitForTimeout(10000);
-            await page.screenshot({ path:  dataFolder +domain.concat('_accept_post_consent.png') });
+            await page.screenshot({ path: dataFolder + domain.concat('_accept_post_consent.png') });
 
-        }else if(validatedArgs.consentMode == ConsentMode.Noop){ // # Issue 2 crawler must not accept cookies or decline
-            await page.screenshot({ path:  dataFolder +domain.concat('_noop.png') });
+        } else if (validatedArgs.consentMode == ConsentMode.Noop) { // # Issue 2 crawler must not accept cookies or decline
+            await page.screenshot({ path: dataFolder + domain.concat('_noop.png') });
         } else { // default to noop
-            await page.screenshot({ path:  dataFolder +domain.concat('_noop.png') });
+            await page.screenshot({ path: dataFolder + domain.concat('_noop.png') });
         }
         let pageload_end_ts = Date.now();
 
@@ -249,10 +250,10 @@ const crawler = new PlaywrightCrawler(true,
             post_pageload_url: page.url(),
             pageload_start_ts: pageload_start_ts,
             pageload_end_ts: pageload_end_ts,
-            requests: requestList           
+            requests: requestList
         }
 
-        Dataset.writePageVisitInfoToFile(JSON.stringify(page_visit_info), domain, validatedArgs.consentMode==0 ? 'accept': 'noop');
+        Dataset.writePageVisitInfoToFile(JSON.stringify(page_visit_info), domain, validatedArgs.consentMode == 0 ? 'accept' : 'noop');
         console.info(`Processing ${page.url()}...`);
         validatedArgs.consentMode == ConsentMode.Accept ? analysis.addRequestsAccept(requestList.length) : analysis.addRequestsNoop(requestList.length)
         analysis.print(Dataset);
