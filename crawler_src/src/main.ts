@@ -14,7 +14,10 @@ import { parse } from 'csv-parse';
 import { load } from 'csv-load-sync';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
+const analysis = require('../../analysis/analysis');
+const playwright = require('playwright');
 
+const dataFolder = "../crawl_data/";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -67,12 +70,28 @@ class PlaywrightCrawler{
         
         
         this.links.forEach(async link => {
-            const page = await this.browser.newPage({     
+            const page = await this.browser.newPage({
                 // We have to add this flag to enable JavaScript execution
                 // on GitHub. waitForFunction() would not work otherwise.
-                                                    bypassCSP: true
-                                                    });
-            await page.goto(link);
+                bypassCSP: true
+            });
+
+            try {
+                let startLoading = new Date();
+                await page.goto(link, { timeout: 10000 });
+                let stopLoading = new Date();
+                let loadingTime = stopLoading.getTime() - startLoading.getTime()
+                validatedArgs.consentMode == ConsentMode.Accept ? analysis.addPageLoadTimeAccept(loadingTime) : analysis.addPageLoadTimeNoop(loadingTime);
+            } catch (error) {
+                if (error instanceof playwright.errors.TimeoutError) {
+                    console.error("Timeout error occured: " + error);
+                    validatedArgs.consentMode == ConsentMode.Accept ? analysis.incrementPageLoadTimeoutAccept() : analysis.incrementPageLoadTimeoutNoop();
+                }
+                else {
+                    console.error("DNS error occured: ", error);
+                    validatedArgs.consentMode == ConsentMode.Accept ? analysis.incrementDNSErrorAccept() : analysis.incrementDNSErrorNoop();
+                }
+            } 
             await this.requestHandler(page);
             // Turn off the browser to clean up after ourselves.
             await this.browser.close();
@@ -185,7 +204,7 @@ function validateArgs(options): ValidatedArgs {
 }
 
 const options = program.opts();
-const Dataset = new DataSet('crawl_data/');
+const Dataset = new DataSet(dataFolder);
 const validatedArgs = validateArgs(options);
 console.log(validatedArgs);
 
@@ -207,20 +226,21 @@ const crawler = new PlaywrightCrawler(true,
 
         // Only accept cookies when the consent mode says so
         if (validatedArgs.consentMode == ConsentMode.Accept) {
-            page.screenshot({ path: "crawl_data/" + domain.concat('_accept_pre_consent.png') });
+            page.screenshot({ path: dataFolder + domain.concat('_accept_pre_consent.png') });
 
             let accepted = await CrawlAccept(page, domain);
             if (!accepted) {
                 console.info(`No consent dialog found for ${domain} TODO: verify if this is true.`);
+                analysis.increaseConsentClickErrorAccept();
             }
 
             await page.waitForTimeout(10000);
-            await page.screenshot({ path:  "crawl_data/" +domain.concat('_accept_post_consent.png') });
+            await page.screenshot({ path:  dataFolder +domain.concat('_accept_post_consent.png') });
 
         }else if(validatedArgs.consentMode == ConsentMode.Noop){ // # Issue 2 crawler must not accept cookies or decline
-            await page.screenshot({ path:  "crawl_data/" +domain.concat('_noop.png') });
+            await page.screenshot({ path:  dataFolder +domain.concat('_noop.png') });
         } else { // default to noop
-            await page.screenshot({ path:  "crawl_data/" +domain.concat('_noop.png') });
+            await page.screenshot({ path:  dataFolder +domain.concat('_noop.png') });
         }
         let pageload_end_ts = Date.now();
 
@@ -233,9 +253,9 @@ const crawler = new PlaywrightCrawler(true,
         }
 
         Dataset.writePageVisitInfoToFile(JSON.stringify(page_visit_info), domain, validatedArgs.consentMode==0 ? 'accept': 'noop');
-
         console.info(`Processing ${page.url()}...`);
-        console.log("consent mode: " + validatedArgs.consentMode);
+        validatedArgs.consentMode == ConsentMode.Accept ? analysis.addRequestsAccept(requestList.length) : analysis.addRequestsNoop(requestList.length)
+        analysis.print(Dataset);
     });
 
 await crawler.addRequests(validatedArgs.targetUrls);
