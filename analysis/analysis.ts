@@ -10,10 +10,6 @@ let page_load_time_noop: Array<number> = []; //done
 let requests_accept: Array<number> = []; //done
 let requests_noop: Array<number> = []; //done
 
-
-
-
-
 module.exports = {
     incrementPageLoadTimeoutAccept: () => { page_load_timeout_accept++ },
     incrementPageLoadTimeoutNoop: () => { page_load_timeout_noop++ },
