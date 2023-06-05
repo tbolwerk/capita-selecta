@@ -220,7 +220,7 @@ const crawler = new PlaywrightCrawler(true,
         // Crawler intercepts and save HTTP request and response in Dataset.
         // Not sure if headers only is enough? await data.text() throws errors for response..?
         page.on("response", async data => Dataset.pushData({ response: { headers: (await data.allHeaders()) } }, page.url(), "pages.json"));
-        page.on("request", async data => Dataset.pushData({ request: (await data.allHeaders()) }, page.url(), "pages.json"));
+        page.on("request", async data => Dataset.pushData({ request: (await data.allHeaders()) }, page.url(), "pages.json")); //don't think this is necessary?
         page.on("request", async data => requestList.push(await data.allHeaders()));
         // await Dataset.pushData({request: interceptRequest, response: interceptResponse});
         await page.waitForTimeout(10000);
@@ -232,16 +232,34 @@ const crawler = new PlaywrightCrawler(true,
             let accepted = await CrawlAccept(page, domain);
             if (!accepted) {
                 console.info(`No consent dialog found for ${domain} TODO: verify if this is true.`);
+                
+                // Analysis                
                 analysis.increaseConsentClickErrorAccept();
             }
 
             await page.waitForTimeout(10000);
             await page.screenshot({ path: dataFolder + domain.concat('_accept_post_consent.png') });
+            
+            // Analysis
+            analysis.addRequestsAccept(requestList.length);
+            let authorities = [];
+            for (let request in requestList) {
+                authorities.push(JSON.parse(JSON.stringify(requestList[request]))[":authority"]);
+            };
+            analysis.addDistinctThirdPartiesAccept(authorities);
 
         } else if (validatedArgs.consentMode == ConsentMode.Noop) { // # Issue 2 crawler must not accept cookies or decline
             await page.screenshot({ path: dataFolder + domain.concat('_noop.png') });
+            
+            // Analysis
+            analysis.addRequestsNoop(requestList.length)
+            for (let request in requestList) {
+                let authority = JSON.parse(JSON.stringify(requestList[request]))[":authority"]
+                analysis.addDistinctThirdPartiesNoop(authority);
+            };
         } else { // default to noop
             await page.screenshot({ path: dataFolder + domain.concat('_noop.png') });
+            analysis.addRequestsNoop(requestList.length)
         }
         let pageload_end_ts = Date.now();
 
@@ -255,7 +273,6 @@ const crawler = new PlaywrightCrawler(true,
 
         Dataset.writePageVisitInfoToFile(JSON.stringify(page_visit_info), domain, validatedArgs.consentMode == 0 ? 'accept' : 'noop');
         console.info(`Processing ${page.url()}...`);
-        validatedArgs.consentMode == ConsentMode.Accept ? analysis.addRequestsAccept(requestList.length) : analysis.addRequestsNoop(requestList.length)
         analysis.print(Dataset);
     });
 
