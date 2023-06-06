@@ -29,6 +29,7 @@ const __dirname = path.dirname(__filename);
 const program = new Command();
 
 const WAIT_DURATION = 10000
+const DEFAULT_TIMEOUT = 10000
 
 const selectors = ['a', 'button', 'div', 'span', 'form', 'p', 'dialog'];
 const acceptWords = readFileSync(join(__dirname, 'accept_words.txt'), 'utf-8').split(/\r?\n/);
@@ -76,11 +77,12 @@ class PlaywrightCrawler {
         let counter = 0;
         this.links.forEach(async link => {
             const browser = await this.browser.newContext();
+            browser.setDefaultTimeout(DEFAULT_TIMEOUT)
             const page = await browser.newPage();
 
             try {
                 let startLoading = new Date();
-                await page.goto(link, { timeout: 10000 });
+                await page.goto(link, { timeout: DEFAULT_TIMEOUT });
                 let stopLoading = new Date();
                 let loadingTime = stopLoading.getTime() - startLoading.getTime()
                 analysis.addPageLoadTime(loadingTime);
@@ -102,7 +104,7 @@ class PlaywrightCrawler {
                 console.error("RequestHandler aborted earlier than expected. " + error);
             }
             // Turn off the browser to clean up after ourselves.
-            await this.browser.close();
+            await browser.close();
 
             counter++;
             if (counter == this.links.length) {
@@ -300,10 +302,10 @@ function IsAcceptWord(word: String) {
 }
 
 function ConstructSelector(entity) {
-    let selector = entity.locator('css=' + selectors[0]);
+    let selector = entity.locator('css=' + selectors[0] + ':visible');
 
     for (let i = 1; i < selectors.length; i++) {
-        selector = selector.or(entity.locator('css=' + selectors[i]));
+        selector = selector.or(entity.locator('css=' + selectors[i] + ':visible'));
     }
 
     return selector;
@@ -321,7 +323,7 @@ async function CrawlAccept(page: Page, domain: string) {
         let word = await elem.innerText();
         if (IsAcceptWord(word)) {
             try {
-                await elem.click();
+                await elem.click({timeout: 1500});
                 console.info(`Found consent acceptance candidate '${word}' for ${domain}`);
                 return true;
             }
