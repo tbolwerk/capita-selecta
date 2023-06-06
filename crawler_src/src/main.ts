@@ -55,9 +55,9 @@ interface ValidatedArgs {
 class PlaywrightCrawler {
     private browser!: Browser;
     private headless!: boolean;
-    private requestHandler: (page: Page) => void;
+    private requestHandler: (page: Page) => Promise<void>;
     private links: string[] = [];
-    constructor(headless: boolean, requestHandler: (page: Page) => void) {
+    constructor(headless: boolean, requestHandler: (page: Page) => Promise<void>) {
         this.headless = headless;
         this.requestHandler = requestHandler;
     }
@@ -95,17 +95,20 @@ class PlaywrightCrawler {
                     analysis.incrementDNSError();
                 }
             }
-            await this.requestHandler(page);
+            try {
+                await this.requestHandler(page);
+            }
+            catch (error) {
+                console.error("RequestHandler aborted earlier than expected. " + error);
+            }
             // Turn off the browser to clean up after ourselves.
             await this.browser.close();
 
             counter++;
-            if (counter == this.links.length){
-                        analysis.print(Dataset, validatedArgs.consentMode == ConsentMode.Accept ? "accept" : "noop");
+            if (counter == this.links.length) {
+                analysis.print(Dataset, validatedArgs.consentMode == ConsentMode.Accept ? "accept" : "noop");
             }
-
         });
-
     }
 }
 
@@ -235,22 +238,22 @@ const crawler = new PlaywrightCrawler(true,
         page.on("request", async data => Dataset.pushData({ request: (await data.allHeaders()) }, page.url(), "pages.json")); //don't think this is necessary?
         page.on("request", async data => requestList.push(await data.allHeaders()));
         // await Dataset.pushData({request: interceptRequest, response: interceptResponse});
-        await page.waitForTimeout(10000);
+        await page.waitForTimeout(WAIT_DURATION);
 
         // Only accept cookies when the consent mode says so
         if (validatedArgs.consentMode == ConsentMode.Accept) {
-            page.screenshot({ path: dataFolder + domain.concat('_accept_pre_consent.png') });
-
+            await page.screenshot({ path: dataFolder + domain.concat('_accept_pre_consent.png') });
+            
             let accepted = await CrawlAccept(page, domain);
             if (!accepted) {
-                console.info(`No consent dialog found for ${domain} TODO: verify if this is true.`);
-                
+                console.info(`No consent dialog found for ${domain}.`);
+
                 // Analysis                
                 analysis.incrementConsentClickError();
             }
 
-            await page.waitForTimeout(10000);
-           //await page.screenshot({ path: dataFolder + domain.concat('_accept_post_consent.png') }); TODO UNCOMMENT
+            await page.waitForTimeout(WAIT_DURATION);
+            await page.screenshot({ path: dataFolder + domain.concat('_accept_post_consent.png') });
         } else if (validatedArgs.consentMode == ConsentMode.Noop) { // # Issue 2 crawler must not accept cookies or decline
             await page.screenshot({ path: dataFolder + domain.concat('_noop.png') });
         } else { // default to noop
@@ -297,10 +300,10 @@ function IsAcceptWord(word: String) {
 }
 
 function ConstructSelector(entity) {
-    let selector = entity.locator('css=' + selectors[0] + ':visible');
+    let selector = entity.locator('css=' + selectors[0]);
 
     for (let i = 1; i < selectors.length; i++) {
-        selector = selector.or(entity.locator('css=' + selectors[i] + ':visible'));
+        selector = selector.or(entity.locator('css=' + selectors[i]));
     }
 
     return selector;
@@ -317,12 +320,14 @@ async function CrawlAccept(page: Page, domain: string) {
     for (const elem of elems) {
         let word = await elem.innerText();
         if (IsAcceptWord(word)) {
-            console.info(`Found consent acceptance candidate '${word}' for ${domain}`);
-            await elem.click();
-
-            // Note, maybe we shouldn't return yet, but some timeouts could be given of the
-            // consent accept reroutes us (so for now just stop loading the other elements).
-            return true;
+            try {
+                await elem.click();
+                console.info(`Found consent acceptance candidate '${word}' for ${domain}`);
+                return true;
+            }
+            catch (error) {
+                console.warn(`Timeout on trying to click acceptance candidate '${word}' for ${domain}`);
+            }
         }
     }
 
@@ -334,12 +339,14 @@ async function CrawlAccept(page: Page, domain: string) {
         for (const elem of elems) {
             let word = await elem.innerText();
             if (IsAcceptWord(word)) {
-                console.info(`Found consent acceptance candidate '${word}' (in iFrame) for ${domain}`);
-                await elem.click();
-
-                // Note, maybe we shouldn't return yet, but some timeouts could be given of the
-                // consent accept reroutes us (so for now just stop loading the other elements).
-                return true;
+                try {
+                    await elem.click();
+                    console.info(`Found consent acceptance candidate '${word}' (in iFrame) for ${domain}`);
+                    return true;
+                }
+                catch (error) {
+                    console.warn(`Timeout on trying to click acceptance candidate '${word}' for ${domain}`);
+                }
             }
         }
     }
