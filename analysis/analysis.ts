@@ -3,7 +3,9 @@ let DNS_error = 0; //done
 let consent_click_error = 0; //done
 
 let page_load_time: Array<number> = []; //done
-let requests: Array<number> = []; //done
+let requests: Array<Object> = [];
+let responses: Array<Array<Object>> = [];
+let requests_numberof: Array<number> = []; //done
 //let distinct_third_parties: Array<Array<string>> = []; //TO FINISH
 let distinct_third_parties: Array<Array<string>> = [["www.google.com"]]; //TO FINISH
 let distinct_third_parties_numberof: Array<number> = [];
@@ -11,6 +13,9 @@ let distinct_trackers: Array<Array<string>> = [];
 let distinct_trackers_numberof: Array<number> = [];
 let distinct_companies: Array<Array<string>> = [];
 let distinct_companies_numberof: Array<number> = []
+
+let cookies: Array<Array<Object>> = [];
+
 
 let trackerJSON;
 let companyJSON;
@@ -60,7 +65,7 @@ function getMostPrevalentTrackers() {
 }
 
 
-function getTopTenFromList(list){
+function getTopTenFromList(list) {
     let topTen = list.reduce(function (acc, curr) {
         return acc[curr] ? ++acc[curr] : acc[curr] = 1, acc
     }, {});
@@ -73,6 +78,32 @@ function getTopTenFromList(list){
     return Object.fromEntries(Object.entries(topTen).slice(0, 10))
 }
 
+function getLongLifeCookies() {
+    let sorted = cookies.flat().sort((a, b) => (a.expires > b.expires) ? -1 : 1)
+    return Object.fromEntries(Object.entries(sorted).slice(0, 3))
+}
+
+function getMostCookieRequests() {
+    let list: Array<Object> = [];
+    for (let i in requests) {
+        let cookies = requests[i].cookie != undefined ? requests[i].cookie.split(";").length : null;
+        let hostname = requests[i][":authority"];
+        let website = requests[i]["referer"];
+        let first_party_request = website != undefined ? (website.includes(hostname) ? true : false) : null;
+
+        let data = {
+            "cookies": cookies,
+            "hostname": hostname,
+            "website": website,
+            "first_party_request": first_party_request,
+        }
+        list.push(data);
+    }
+
+    let sorted = list.sort((a, b) => (a.cookies > b.cookies) ? -1 : 1)
+    return Object.fromEntries(Object.entries(sorted).slice(0, 3))
+}
+
 module.exports = {
     setTrackers: (trackers) => { trackerJSON = JSON.stringify(trackers) },
     setCompanies: (companies) => { companyJSON = companies; },
@@ -82,7 +113,15 @@ module.exports = {
     incrementConsentClickError: () => { consent_click_error++ },
 
     addPageLoadTime: (item: number) => { page_load_time.push(item) },
-    addRequests: (item: number) => { requests.push(item) },
+    addRequests: (request) => {
+        requests_numberof.push(request.length);
+        for (let i in request) {
+            requests.push(request[i])
+        }
+    },
+    addResponses: (response) => {
+        responses.push(response);
+    },
     addDistinctThirdParties: (items: Array<string>) => {
         items = [...new Set(items)];
         distinct_third_parties.push(items);
@@ -95,8 +134,9 @@ module.exports = {
         let companies = findCompanies(trackers);
         distinct_companies.push(companies);
         distinct_companies_numberof.push(companies.length);
-
     },
+
+    addCookies: (item: Array<Object>) => { cookies.push(item) },
 
     print: (DataSet, mode: string) => {
         let data = {
@@ -106,12 +146,15 @@ module.exports = {
             DNS_error: DNS_error,
             consent_click_error: consent_click_error,
 
+            requests: getMostCookieRequests(),
+            responses: responses,
+
             page_load_time_min: Math.min(...page_load_time),
             page_load_time_max: Math.max(...page_load_time),
             page_load_time: page_load_time.reduce((p, c) => p + c, 0) / page_load_time.length,
-            requests_min: Math.min(...requests),
-            requests_max: Math.max(...requests),
-            requests: requests.reduce((p, c) => p + c, 0) / requests.length,
+            requests_min: Math.min(...requests_numberof),
+            requests_max: Math.max(...requests_numberof),
+            requests_numberof: requests_numberof.reduce((p, c) => p + c, 0) / requests_numberof.length,
             distinct_third_parties: distinct_third_parties,
             distinct_third_parties_numberof_min: Math.min(...distinct_third_parties_numberof),
             distinct_third_parties_numberof_max: Math.max(...distinct_third_parties_numberof),
@@ -127,6 +170,8 @@ module.exports = {
 
             most_prevalent_third_parties: getMostPrevalentThirdParties(),
             most_prevalent_trackers: getMostPrevalentTrackers(),
+
+            long_life_cookies: getLongLifeCookies(),
         }
 
         let jsonData = JSON.stringify(data);
