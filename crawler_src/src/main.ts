@@ -233,7 +233,7 @@ const crawler = new PlaywrightCrawler(true,
         // # Issue 7 TODO: Fix this, creat Dataset
         // Crawler intercepts and save HTTP request and response in Dataset.
         // Not sure if headers only is enough? await data.text() throws errors for response..?
-        page.on("response", async data => analysis.addResponses(await data.allHeaders()));
+        page.on("response", async data => analysis.addResponses(await data.allHeaders(),domain));
         page.on("response", async data => Dataset.pushData({ response: { headers: (await data.allHeaders()) } }, page.url(), "pages.json"));
         page.on("request", async data => Dataset.pushData({ request: (await data.allHeaders()) }, page.url(), "pages.json")); //don't think this is necessary?
         page.on("request", async data => requestList.push(await data.allHeaders()));

@@ -1,11 +1,11 @@
-let page_load_timeout = 0; //done
-let DNS_error = 0; //done
-let consent_click_error = 0; //done
+let page_load_timeout = 0; 
+let DNS_error = 0; 
+let consent_click_error = 0; 
 
-let page_load_time: Array<number> = []; //done
+let page_load_time: Array<number> = []; 
 let requests: Array<Object> = [];
 let responses: Array<Array<Object>> = [];
-let requests_numberof: Array<number> = []; //done
+let requests_numberof: Array<number> = []; 
 //let distinct_third_parties: Array<Array<string>> = []; //TO FINISH
 let distinct_third_parties: Array<Array<string>> = [["www.google.com"]]; //TO FINISH
 let distinct_third_parties_numberof: Array<number> = [];
@@ -104,6 +104,20 @@ function getMostCookieRequests() {
     return Object.fromEntries(Object.entries(sorted).slice(0, 3))
 }
 
+function getRedirections(){
+    // let redirections: Array<Object> = [];
+    // let domains: Array<string> = [];
+    // for (let i in responses){
+    //     if (responses[i].location != undefined){
+    //         redirections.push(responses[i]);
+    //         domains.push(responses[i].domain);
+    //     }
+    // }
+
+    // return redirections;
+    return "TODO";
+}
+
 module.exports = {
     setTrackers: (trackers) => { trackerJSON = JSON.stringify(trackers) },
     setCompanies: (companies) => { companyJSON = companies; },
@@ -119,7 +133,8 @@ module.exports = {
             requests.push(request[i])
         }
     },
-    addResponses: (response) => {
+    addResponses: (response, domain) => {
+        response["domain"] = domain;
         responses.push(response);
     },
     addDistinctThirdParties: (items: Array<string>) => {
@@ -147,7 +162,6 @@ module.exports = {
             consent_click_error: consent_click_error,
 
             requests: getMostCookieRequests(),
-            responses: responses,
 
             page_load_time_min: Math.min(...page_load_time),
             page_load_time_max: Math.max(...page_load_time),
@@ -172,6 +186,7 @@ module.exports = {
             most_prevalent_trackers: getMostPrevalentTrackers(),
 
             long_life_cookies: getLongLifeCookies(),
+            redirections: getRedirections(),
         }
 
         let jsonData = JSON.stringify(data);
