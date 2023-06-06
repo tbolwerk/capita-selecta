@@ -3,5 +3,5 @@ node_modules/
 /playwright-report/
 /playwright/.cache/
 *.png
-*.json
 crawl_data/
+analysis/data/
