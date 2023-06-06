@@ -12,9 +12,15 @@ import { Command } from 'commander'
 import { parse } from 'csv-parse';
 import { load } from 'csv-load-sync';
 import { createRequire } from 'module';
+import trackers from '../../analysis/data/services.json' assert {type: 'json'};
+import companies from '../../analysis/data/domain_map.json' assert {type: 'json'};
+
 const require = createRequire(import.meta.url);
 const analysis = require('../../analysis/analysis');
 const playwright = require('playwright');
+
+analysis.setTrackers(trackers);
+analysis.setCompanies(companies);
 
 const dataFolder = "../crawl_data/";
 const __filename = fileURLToPath(import.meta.url);
@@ -67,7 +73,7 @@ class PlaywrightCrawler {
             }
         });
 
-
+        let counter = 0;
         this.links.forEach(async link => {
             const page = await this.browser.newPage({
                 // We have to add this flag to enable JavaScript execution
@@ -80,21 +86,28 @@ class PlaywrightCrawler {
                 await page.goto(link, { timeout: 10000 });
                 let stopLoading = new Date();
                 let loadingTime = stopLoading.getTime() - startLoading.getTime()
-                validatedArgs.consentMode == ConsentMode.Accept ? analysis.addPageLoadTimeAccept(loadingTime) : analysis.addPageLoadTimeNoop(loadingTime);
+                analysis.addPageLoadTime(loadingTime);
             } catch (error) {
                 if (error instanceof playwright.errors.TimeoutError) {
                     console.error("Timeout error occured: " + error);
-                    validatedArgs.consentMode == ConsentMode.Accept ? analysis.incrementPageLoadTimeoutAccept() : analysis.incrementPageLoadTimeoutNoop();
+                    analysis.incrementPageLoadTimeout();
                 }
                 else {
                     console.error("DNS error occured: ", error);
-                    validatedArgs.consentMode == ConsentMode.Accept ? analysis.incrementDNSErrorAccept() : analysis.incrementDNSErrorNoop();
+                    analysis.incrementDNSError();
                 }
             }
             await this.requestHandler(page);
             // Turn off the browser to clean up after ourselves.
             await this.browser.close();
+
+            counter++;
+            if (counter == this.links.length){
+                        analysis.print(Dataset, validatedArgs.consentMode == ConsentMode.Accept ? "accept" : "noop");
+            }
+
         });
+
     }
 }
 
@@ -234,33 +247,27 @@ const crawler = new PlaywrightCrawler(true,
                 console.info(`No consent dialog found for ${domain} TODO: verify if this is true.`);
                 
                 // Analysis                
-                analysis.increaseConsentClickErrorAccept();
+                analysis.incrementConsentClickError();
             }
 
             await page.waitForTimeout(10000);
-            await page.screenshot({ path: dataFolder + domain.concat('_accept_post_consent.png') });
-            
-            // Analysis
-            analysis.addRequestsAccept(requestList.length);
-            let authorities = [];
-            for (let request in requestList) {
-                authorities.push(JSON.parse(JSON.stringify(requestList[request]))[":authority"]);
-            };
-            analysis.addDistinctThirdPartiesAccept(authorities);
-
+            //await page.screenshot({ path: dataFolder + domain.concat('_accept_post_consent.png') }); TODO UNCOMMENT
         } else if (validatedArgs.consentMode == ConsentMode.Noop) { // # Issue 2 crawler must not accept cookies or decline
             await page.screenshot({ path: dataFolder + domain.concat('_noop.png') });
-            
-            // Analysis
-            analysis.addRequestsNoop(requestList.length)
-            for (let request in requestList) {
-                let authority = JSON.parse(JSON.stringify(requestList[request]))[":authority"]
-                analysis.addDistinctThirdPartiesNoop(authority);
-            };
         } else { // default to noop
             await page.screenshot({ path: dataFolder + domain.concat('_noop.png') });
-            analysis.addRequestsNoop(requestList.length)
         }
+
+        // Analysis
+        analysis.addRequests(requestList.length);
+        let authorities = [];
+        for (let request in requestList) {
+            authorities.push(JSON.parse(JSON.stringify(requestList[request]))[":authority"]);
+        };
+        analysis.addDistinctThirdParties(authorities);
+
+
+
         let pageload_end_ts = Date.now();
 
         let page_visit_info = {
@@ -273,7 +280,7 @@ const crawler = new PlaywrightCrawler(true,
 
         Dataset.writePageVisitInfoToFile(JSON.stringify(page_visit_info), domain, validatedArgs.consentMode == 0 ? 'accept' : 'noop');
         console.info(`Processing ${page.url()}...`);
-        analysis.print(Dataset);
+        //analysis.print(Dataset, validatedArgs.consentMode == ConsentMode.Accept ? "accept" : "noop");
     });
 
 await crawler.addRequests(validatedArgs.targetUrls);

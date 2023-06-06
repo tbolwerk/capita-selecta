@@ -1,77 +1,136 @@
-let page_load_timeout_accept = 0; //done
-let page_load_timeout_noop = 0; //done
-let DNS_error_accept = 0; //done
-let DNS_error_noop = 0; //done
-let consent_click_error_accept = 0; //done
-const consent_click_error_noop = "NA"; //done
+let page_load_timeout = 0; //done
+let DNS_error = 0; //done
+let consent_click_error = 0; //done
 
-let page_load_time_accept: Array<number> = []; //done
-let page_load_time_noop: Array<number> = []; //done
-let requests_accept: Array<number> = []; //done
-let requests_noop: Array<number> = []; //done
-let distinct_third_parties_accept: Array<Array<string>> = []; //TO FINISH
-let distinct_third_parties_noop: Array<Array<string>> = []; //TO FINISH
-let distinct_third_parties_numberof_accept: Array<number> = [];
-let distinct_third_parties_numberof_noop: Array<number> = [];
-let distinct_trackers_accept = "tobeimplemented"; 
-//ADD MORE TRACKERS AND ENTITIES/COMPANIES
+let page_load_time: Array<number> = []; //done
+let requests: Array<number> = []; //done
+//let distinct_third_parties: Array<Array<string>> = []; //TO FINISH
+let distinct_third_parties: Array<Array<string>> = [["www.google.com"]]; //TO FINISH
+let distinct_third_parties_numberof: Array<number> = [];
+let distinct_trackers: Array<Array<string>> = [];
+let distinct_trackers_numberof: Array<number> = [];
+let distinct_companies: Array<Array<string>> = [];
+let distinct_companies_numberof: Array<number> = []
+
+let trackerJSON;
+let companyJSON;
+
+function findCompanies(domains: Array<string>) {
+    let companies: Array<string> = [];
+    for (let i in domains) {
+        if (domains[i]) {
+            let domain = domains[i].startsWith("www.") ? domains[i].substring(4) : domains[i];
+            for (let item in companyJSON) {
+                if (item == domain) {
+                    companies.push(companyJSON[item].entityName);
+                }
+            }
+        }
+    }
+    return [...new Set(companies)];
+}
+
+function getMostPrevalentThirdParties() {
+    let topTen = getTopTenFromList(distinct_third_parties.flat());
+
+    let data: Array<Object> = [];
+    for (let i in topTen) {
+        let obj = {
+            domain: i,
+            occurence: topTen[i],
+            isTracker: distinct_trackers.flat().includes(i)
+        }
+        data.push(obj);
+    }
+    return data
+}
+
+function getMostPrevalentTrackers() {
+    let topTen = getTopTenFromList(distinct_companies.flat());
+
+    let data: Array<Object> = [];
+    for (let i in topTen) {
+        let obj = {
+            entity: i,
+            occurence: topTen[i],
+        }
+        data.push(obj);
+    }
+    return data
+}
 
 
+function getTopTenFromList(list){
+    let topTen = list.reduce(function (acc, curr) {
+        return acc[curr] ? ++acc[curr] : acc[curr] = 1, acc
+    }, {});
+
+    topTen = Object.fromEntries(
+        Object.entries(topTen).sort(([, a], [, b]) => b - a)
+    );
+
+    delete topTen.undefined;
+    return Object.fromEntries(Object.entries(topTen).slice(0, 10))
+}
 
 module.exports = {
-    incrementPageLoadTimeoutAccept: () => { page_load_timeout_accept++ },
-    incrementPageLoadTimeoutNoop: () => { page_load_timeout_noop++ },
-    incrementDNSErrorAccept: () => { DNS_error_accept++ },
-    incrementDNSErrorNoop: () => { DNS_error_noop++ },
-    incrementConsentClickErrorAccept: () => { consent_click_error_accept++ },
+    setTrackers: (trackers) => { trackerJSON = JSON.stringify(trackers) },
+    setCompanies: (companies) => { companyJSON = companies; },
 
-    addPageLoadTimeAccept: (item: number) => { page_load_time_accept.push(item) },
-    addPageLoadTimeNoop: (item: number) => { page_load_time_accept.push(item) },
-    addRequestsAccept: (item: number) => { requests_accept.push(item) },
-    addRequestsNoop: (item: number) => { requests_noop.push(item) },
-    addDistinctThirdPartiesAccept: (items: Array<string>) => {
+    incrementPageLoadTimeout: () => { page_load_timeout++ },
+    incrementDNSError: () => { DNS_error++ },
+    incrementConsentClickError: () => { consent_click_error++ },
+
+    addPageLoadTime: (item: number) => { page_load_time.push(item) },
+    addRequests: (item: number) => { requests.push(item) },
+    addDistinctThirdParties: (items: Array<string>) => {
         items = [...new Set(items)];
-        distinct_third_parties_accept.push(items);
-        distinct_third_parties_numberof_accept.push(items.length);
-    },
-    addDistinctThirdPartiesNoop: (items: Array<string>) => { 
-        items = [...new Set(items)];
-        distinct_third_parties_noop.push(items);
-        distinct_third_parties_numberof_noop.push(items.length);
+        distinct_third_parties.push(items);
+        distinct_third_parties_numberof.push(items.length);
+
+        let trackers = items.filter(item => trackerJSON.search(item) != -1)
+        distinct_trackers.push(trackers);
+        distinct_trackers_numberof.push(trackers.length);
+
+        let companies = findCompanies(trackers);
+        distinct_companies.push(companies);
+        distinct_companies_numberof.push(companies.length);
+
     },
 
-
-    print: (DataSet) => {
+    print: (DataSet, mode: string) => {
         let data = {
-            page_load_timeout_accept: page_load_timeout_accept,
-            page_load_timeout_noop: page_load_timeout_noop,
-            DNS_error_accept: DNS_error_accept,
-            DNS_error_noop: DNS_error_noop,
-            consent_click_error_accept: consent_click_error_accept,
-            consent_click_error_noop: consent_click_error_noop,
-            page_load_time_accept_min: Math.min(...page_load_time_accept),
-            page_load_time_accept_max: Math.max(...page_load_time_accept),
-            page_load_time_accept: page_load_time_accept.reduce((p, c) => p + c, 0) / page_load_time_accept.length,
-            page_load_time_noop_min: Math.min(...page_load_time_noop),
-            page_load_time_noop_max: Math.max(...page_load_time_noop),
-            page_load_time_noop: page_load_time_noop.reduce((p, c) => p + c, 0) / page_load_time_noop.length,
-            requests_accept_min: Math.min(...requests_accept),
-            requests_accept_max: Math.max(...requests_accept),
-            requests_accept: requests_accept.reduce((p, c) => p + c, 0) / requests_accept.length,
-            requests_noop_min: Math.min(...requests_noop),
-            requests_noop_max: Math.max(...requests_noop),
-            requests_noop: requests_noop.reduce((p, c) => p + c, 0) / requests_noop.length,
-            distinct_third_parties_acceptTODELETE: distinct_third_parties_accept,
-            distinct_third_parties_numberof_accept_min: Math.min(...distinct_third_parties_numberof_accept),
-            distinct_third_parties_numberof_accept_max: Math.max(...distinct_third_parties_numberof_accept),
-            distinct_third_parties_numberof_accept: distinct_third_parties_numberof_accept.reduce((p, c) => p + c, 0) / distinct_third_parties_numberof_accept.length,
-            distinct_third_parties_numberof_noop: distinct_third_parties_numberof_noop.reduce((p, c) => p + c, 0) / distinct_third_parties_numberof_noop.length,
-            distinct_third_parties_numberof_noop_min: Math.min(...distinct_third_parties_numberof_noop),
-            distinct_third_parties_numberof_noop_max: Math.max(...distinct_third_parties_numberof_noop),
+            mode: mode,
+
+            page_load_timeout: page_load_timeout,
+            DNS_error: DNS_error,
+            consent_click_error: consent_click_error,
+
+            page_load_time_min: Math.min(...page_load_time),
+            page_load_time_max: Math.max(...page_load_time),
+            page_load_time: page_load_time.reduce((p, c) => p + c, 0) / page_load_time.length,
+            requests_min: Math.min(...requests),
+            requests_max: Math.max(...requests),
+            requests: requests.reduce((p, c) => p + c, 0) / requests.length,
+            distinct_third_parties: distinct_third_parties,
+            distinct_third_parties_numberof_min: Math.min(...distinct_third_parties_numberof),
+            distinct_third_parties_numberof_max: Math.max(...distinct_third_parties_numberof),
+            distinct_third_parties_numberof: distinct_third_parties_numberof.reduce((p, c) => p + c, 0) / distinct_third_parties_numberof.length,
+            distinct_trackers: distinct_trackers,
+            distinct_trackers_numberof_min: Math.min(...distinct_trackers_numberof),
+            distinct_trackers_numberof_max: Math.max(...distinct_trackers_numberof),
+            distinct_trackers_numberof: distinct_trackers_numberof.reduce((p, c) => p + c, 0) / distinct_trackers_numberof.length,
+            distinct_companies: distinct_companies,
+            distinct_companies_numberof_min: Math.min(...distinct_companies_numberof),
+            distinct_companies_numberof_max: Math.max(...distinct_companies_numberof),
+            distinct_companies_numberof: distinct_companies_numberof.reduce((p, c) => p + c, 0) / distinct_companies_numberof.length,
+
+            most_prevalent_third_parties: getMostPrevalentThirdParties(),
+            most_prevalent_trackers: getMostPrevalentTrackers(),
         }
 
         let jsonData = JSON.stringify(data);
-        DataSet.writeToFile(jsonData, "../analysis/data.json");
+        DataSet.writeToFile(jsonData, `../analysis/data/data_${mode}.json`);
     }
 };
 
