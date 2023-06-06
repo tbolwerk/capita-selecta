@@ -75,11 +75,8 @@ class PlaywrightCrawler {
 
         let counter = 0;
         this.links.forEach(async link => {
-            const page = await this.browser.newPage({
-                // We have to add this flag to enable JavaScript execution
-                // on GitHub. waitForFunction() would not work otherwise.
-                bypassCSP: true
-            });
+            const browser = await this.browser.newContext();
+            const page = await browser.newPage();
 
             try {
                 let startLoading = new Date();
@@ -87,6 +84,7 @@ class PlaywrightCrawler {
                 let stopLoading = new Date();
                 let loadingTime = stopLoading.getTime() - startLoading.getTime()
                 analysis.addPageLoadTime(loadingTime);
+                analysis.addCookies(await browser.cookies())
             } catch (error) {
                 if (error instanceof playwright.errors.TimeoutError) {
                     console.error("Timeout error occured: " + error);
@@ -232,6 +230,7 @@ const crawler = new PlaywrightCrawler(true,
         // # Issue 7 TODO: Fix this, creat Dataset
         // Crawler intercepts and save HTTP request and response in Dataset.
         // Not sure if headers only is enough? await data.text() throws errors for response..?
+        page.on("response", async data => analysis.addResponses(await data.allHeaders()));
         page.on("response", async data => Dataset.pushData({ response: { headers: (await data.allHeaders()) } }, page.url(), "pages.json"));
         page.on("request", async data => Dataset.pushData({ request: (await data.allHeaders()) }, page.url(), "pages.json")); //don't think this is necessary?
         page.on("request", async data => requestList.push(await data.allHeaders()));
@@ -251,7 +250,7 @@ const crawler = new PlaywrightCrawler(true,
             }
 
             await page.waitForTimeout(10000);
-            //await page.screenshot({ path: dataFolder + domain.concat('_accept_post_consent.png') }); TODO UNCOMMENT
+           //await page.screenshot({ path: dataFolder + domain.concat('_accept_post_consent.png') }); TODO UNCOMMENT
         } else if (validatedArgs.consentMode == ConsentMode.Noop) { // # Issue 2 crawler must not accept cookies or decline
             await page.screenshot({ path: dataFolder + domain.concat('_noop.png') });
         } else { // default to noop
@@ -259,7 +258,7 @@ const crawler = new PlaywrightCrawler(true,
         }
 
         // Analysis
-        analysis.addRequests(requestList.length);
+        analysis.addRequests(requestList);
         let authorities = [];
         for (let request in requestList) {
             authorities.push(JSON.parse(JSON.stringify(requestList[request]))[":authority"]);
