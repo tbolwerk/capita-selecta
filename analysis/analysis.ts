@@ -119,24 +119,23 @@ export function getRedirections() {
             let redirectPair = { source: response.url, target: response.location_domain };
             if (!redirectsUnique.has(redirectPair)) {
                 redirectsUnique.set(redirectPair, 1);
-            }
+            }            
         });
 
         // Collect all data into a filtered redirect map.
-        redirectsUnique.forEach((redirect, _) => {
+        redirectsUnique.forEach((_, redirect) => {
             if (filteredRedirects.has(redirect)) {
                 filteredRedirects.set(redirect, filteredRedirects.get(redirect) + 1);
             } else {
-                filteredRedirects[redirect] = 1;
+                filteredRedirects.set(redirect, 1);
             }
         });
     });
 
     let result = [];
-    filteredRedirects.forEach((redirect, distinctWebsites) => {
+    filteredRedirects.forEach((distinctWebsites, redirect) => {
         result.push({ source: redirect.source, target: redirect.target, distinctWebsites: distinctWebsites });
     });
-    console.log("RESULT: "+ JSON.stringify(result));
     return result;
 }
 
