@@ -190,7 +190,7 @@ export function setCompanies(companies) { companyJSON = companies; }
         }
 
         let jsonData = JSON.stringify(data);
-        DataSet.writeToFile(jsonData, `../crawl_data/data/data_${mode}.json`); // TODO: fix this
+        DataSet.writeToFile(jsonData, `crawl_data/data_${mode}.json`); // TODO: fix this
     }
 
 
