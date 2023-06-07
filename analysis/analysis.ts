@@ -125,7 +125,6 @@ export function getRedirections() {
         // Collect all data into a filtered redirect map.
         redirectsUnique.forEach((redirect, redirectStr) => {
             if (filteredRedirects.has(redirectStr)) {
-                console.log("INCREMENT FOR STR " + redirectStr);
                 let object = filteredRedirects.get(redirectStr);
                 object['distinctWebsites'] = object['distinctWebsites'] + 1;
                 filteredRedirects.set(redirectStr, object);
