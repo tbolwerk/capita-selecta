@@ -4,5 +4,3 @@ node_modules/
 /playwright/.cache/
 *.png
 crawl_data/
-analysis/data/data_accept.json
-analysis/data/data_noop.json

@@ -1,11 +1,11 @@
-let page_load_timeout = 0; 
-let DNS_error = 0; 
-let consent_click_error = 0; 
+let page_load_timeout = 0;
+let DNS_error = 0;
+let consent_click_error = 0;
 
-let page_load_time: Array<number> = []; 
+let page_load_time: Array<number> = [];
 let requests: Array<Object> = [];
 let responses: Array<Array<Object>> = [];
-let requests_numberof: Array<number> = []; 
+let requests_numberof: Array<number> = [];
 //let distinct_third_parties: Array<Array<string>> = []; //TO FINISH
 let distinct_third_parties: Array<Array<string>> = [["www.google.com"]]; //TO FINISH
 let distinct_third_parties_numberof: Array<number> = [];
@@ -81,9 +81,9 @@ export function getTopTenFromList(list) {
 export function getLongLifeCookies() {
     let sorted = cookies.flat().sort((a, b) => (a.expires > b.expires) ? -1 : 1);
     let topThree = Object.fromEntries(Object.entries(sorted).slice(0, 3));
-    for (let i in topThree){
+    for (let i in topThree) {
         topThree[i].size = JSON.stringify(topThree[i]).length;
-        topThree[i].value = topThree[i].value.slice(0,5);
+        topThree[i].value = topThree[i].value.slice(0, 5);
     }
     return topThree;
 }
@@ -109,101 +109,135 @@ export function getMostCookieRequests() {
     return Object.fromEntries(Object.entries(sorted).slice(0, 3))
 }
 
-export function getRedirections(){
-    let redirections: Array<Object> = [];
-    let domains: Array<string> = [];
-    for (let i in responses){
-        if (responses[i].location != undefined){
+export function getRedirections() {
+    var filteredRedirects = new Map();
 
-            try{
-            let domain = (new URL(responses[i].location));
-            responses[i].locationDomain = domain.hostname;
-            }catch(err){
-                console.log("whoops");
+    responses.forEach(responseList => {
+        // Remove duplicate redirect pairs
+        let redirectsUnique = new Map();
+        responseList.forEach(response => {
+            let redirectPair = { source: response.url, target: response.location_domain };
+            if (!redirectsUnique.has(redirectPair)) {
+                redirectsUnique.set(redirectPair, 1);
             }
+        });
 
-            redirections.push(responses[i]);
-            domains.push(responses[i].domain);
-        }
-    }
+        // Collect all data into a filtered redirect map.
+        redirectsUnique.forEach((redirect, _) => {
+            if (filteredRedirects.has(redirect)) {
+                filteredRedirects.set(redirect, filteredRedirects.get(redirect) + 1);
+            } else {
+                filteredRedirects[redirect] = 1;
+            }
+        });
+    });
 
-
-    return redirections;
+    let result = [];
+    filteredRedirects.forEach((redirect, distinctWebsites) => {
+        result.push({ source: redirect.source, target: redirect.target, distinctWebsites: distinctWebsites });
+    });
+    console.log("RESULT: "+ JSON.stringify(result));
+    return result;
 }
 
 
-export function setTrackers(trackers){ trackerJSON = JSON.stringify(trackers) }
+export function setTrackers(trackers) { trackerJSON = JSON.stringify(trackers) }
 export function setCompanies(companies) { companyJSON = companies; }
 
-    export function incrementPageLoadTimeout () { page_load_timeout++ }
-    export function incrementDNSError ()  { DNS_error++ }
-    export function incrementConsentClickError ()  { consent_click_error++ }
+export function incrementPageLoadTimeout() { page_load_timeout++ }
+export function incrementDNSError() { DNS_error++ }
+export function incrementConsentClickError() { consent_click_error++ }
 
-    export function addPageLoadTime (item: number)  { page_load_time.push(item) }
-    export function addRequests (request)  {
-        requests_numberof.push(request.length);
-        for (let i in request) {
-            requests.push(request[i])
+export function addPageLoadTime(item: number) { page_load_time.push(item) }
+export function addRequests(request) {
+    requests_numberof.push(request.length);
+    for (let i in request) {
+        requests.push(request[i])
+    }
+}
+
+export function addResponses(responseList) {
+    let list: Array<Object> = [];
+    for (let i in responseList) {
+        if (responseList[i].data.location != undefined) {
+            let locationDomain;
+            let urlDomain;
+            try {
+                locationDomain = (new URL(responseList[i].data.location)).hostname;
+            } catch (err) {
+                locationDomain = null
+            }
+            try {
+                urlDomain = (new URL(responseList[i].url)).hostname;
+            } catch (err) {
+                urlDomain = null
+            }
+
+            list.push({
+                "domain": responseList[i].domain,
+                "location_domain": locationDomain,
+                "url": urlDomain
+            })
         }
     }
-    export function addResponses (response, domain)  {
-        response["domain"] = domain;
-        responses.push(response);
+
+    responses.push(list);
+}
+
+export function addDistinctThirdParties(items: Array<string>) {
+    items = [...new Set(items)];
+    distinct_third_parties.push(items);
+    distinct_third_parties_numberof.push(items.length);
+
+    let trackers = items.filter(item => trackerJSON.search(item) != -1)
+    distinct_trackers.push(trackers);
+    distinct_trackers_numberof.push(trackers.length);
+
+    let companies = findCompanies(trackers);
+    distinct_companies.push(companies);
+    distinct_companies_numberof.push(companies.length);
+}
+
+export function addCookies(item: Array<Object>) { cookies.push(item) }
+
+export function print(DataSet, mode: string) {
+    let data = {
+        mode: mode,
+
+        page_load_timeout: page_load_timeout,
+        DNS_error: DNS_error,
+        consent_click_error: consent_click_error,
+
+        requests: getMostCookieRequests(),
+
+        page_load_time_min: Math.min(...page_load_time),
+        page_load_time_max: Math.max(...page_load_time),
+        page_load_time: page_load_time.reduce((p, c) => p + c, 0) / page_load_time.length,
+        requests_min: Math.min(...requests_numberof),
+        requests_max: Math.max(...requests_numberof),
+        requests_numberof: requests_numberof.reduce((p, c) => p + c, 0) / requests_numberof.length,
+        distinct_third_parties: distinct_third_parties,
+        distinct_third_parties_numberof_min: Math.min(...distinct_third_parties_numberof),
+        distinct_third_parties_numberof_max: Math.max(...distinct_third_parties_numberof),
+        distinct_third_parties_numberof: distinct_third_parties_numberof.reduce((p, c) => p + c, 0) / distinct_third_parties_numberof.length,
+        distinct_trackers: distinct_trackers,
+        distinct_trackers_numberof_min: Math.min(...distinct_trackers_numberof),
+        distinct_trackers_numberof_max: Math.max(...distinct_trackers_numberof),
+        distinct_trackers_numberof: distinct_trackers_numberof.reduce((p, c) => p + c, 0) / distinct_trackers_numberof.length,
+        distinct_companies: distinct_companies,
+        distinct_companies_numberof_min: Math.min(...distinct_companies_numberof),
+        distinct_companies_numberof_max: Math.max(...distinct_companies_numberof),
+        distinct_companies_numberof: distinct_companies_numberof.reduce((p, c) => p + c, 0) / distinct_companies_numberof.length,
+
+        most_prevalent_third_parties: getMostPrevalentThirdParties(),
+        most_prevalent_trackers: getMostPrevalentTrackers(),
+
+        long_life_cookies: getLongLifeCookies(),
+        redirections: getRedirections(),
     }
-    export function addDistinctThirdParties (items: Array<string>){
-        items = [...new Set(items)];
-        distinct_third_parties.push(items);
-        distinct_third_parties_numberof.push(items.length);
 
-        let trackers = items.filter(item => trackerJSON.search(item) != -1)
-        distinct_trackers.push(trackers);
-        distinct_trackers_numberof.push(trackers.length);
-
-        let companies = findCompanies(trackers);
-        distinct_companies.push(companies);
-        distinct_companies_numberof.push(companies.length);
-    }
-
-    export function addCookies (item: Array<Object>)  { cookies.push(item) }
-
-    export function print (DataSet, mode: string)  {
-        let data = {
-            mode: mode,
-
-            page_load_timeout: page_load_timeout,
-            DNS_error: DNS_error,
-            consent_click_error: consent_click_error,
-
-            requests: getMostCookieRequests(),
-
-            page_load_time_min: Math.min(...page_load_time),
-            page_load_time_max: Math.max(...page_load_time),
-            page_load_time: page_load_time.reduce((p, c) => p + c, 0) / page_load_time.length,
-            requests_min: Math.min(...requests_numberof),
-            requests_max: Math.max(...requests_numberof),
-            requests_numberof: requests_numberof.reduce((p, c) => p + c, 0) / requests_numberof.length,
-            distinct_third_parties: distinct_third_parties,
-            distinct_third_parties_numberof_min: Math.min(...distinct_third_parties_numberof),
-            distinct_third_parties_numberof_max: Math.max(...distinct_third_parties_numberof),
-            distinct_third_parties_numberof: distinct_third_parties_numberof.reduce((p, c) => p + c, 0) / distinct_third_parties_numberof.length,
-            distinct_trackers: distinct_trackers,
-            distinct_trackers_numberof_min: Math.min(...distinct_trackers_numberof),
-            distinct_trackers_numberof_max: Math.max(...distinct_trackers_numberof),
-            distinct_trackers_numberof: distinct_trackers_numberof.reduce((p, c) => p + c, 0) / distinct_trackers_numberof.length,
-            distinct_companies: distinct_companies,
-            distinct_companies_numberof_min: Math.min(...distinct_companies_numberof),
-            distinct_companies_numberof_max: Math.max(...distinct_companies_numberof),
-            distinct_companies_numberof: distinct_companies_numberof.reduce((p, c) => p + c, 0) / distinct_companies_numberof.length,
-
-            most_prevalent_third_parties: getMostPrevalentThirdParties(),
-            most_prevalent_trackers: getMostPrevalentTrackers(),
-
-            long_life_cookies: getLongLifeCookies(),
-            redirections: getRedirections(),
-        }
-
-        let jsonData = JSON.stringify(data);
-        DataSet.writeToFile(jsonData, `analysis/data/data_${mode}.json`); // TODO: fix this
-    }
+    let jsonData = JSON.stringify(data);
+    DataSet.writeToFile(jsonData, `analysis/data/data_${mode}.json`); // TODO: fix this
+}
 
 
