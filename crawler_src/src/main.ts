@@ -3,6 +3,9 @@ import { join } from "path";
 import { readFileSync, write } from 'fs';
 import { fileURLToPath } from 'url';
 
+// import { PlaywrightCrawler} from 'crawlee';
+import { PlaywrightCrawler } from "./crawler";
+
 // Import the Chromium browser into our scraper.
 import { chromium, Browser, Page, Request, selectors } from 'playwright';
 import { Command } from 'commander'
@@ -12,9 +15,12 @@ import { createRequire } from 'module';
 import trackers from '../../analysis/data/services.json' assert {type: 'json'};
 import companies from '../../analysis/data/domain_map.json' assert {type: 'json'};
 
-const require = createRequire(import.meta.url);
-const analysis = require('../../analysis/analysis');
-const playwright = require('playwright');
+// const require = createRequire(import.meta.url);
+// const analysis = require('../../analysis/analysis');
+// const playwright = require('playwright');
+import * as analysis from '../../analysis/analysis.ts';
+import playwright from 'playwright';
+import fs from 'fs';
 
 analysis.setTrackers(trackers);
 analysis.setCompanies(companies);
@@ -142,21 +148,21 @@ function parseRankedDomainsCsv(filePath: string): string[] {
 }
 
 class DataSet {
-    private fs = require('fs');
+    // private fs = require('fs');
     private folder: string;
     constructor(folder: string) {
         this.folder = folder;
     }
 
     private writeToFile(data: string, filename: string) {
-        this.fs.writeFile(filename, data, function (err) {
+        fs.writeFile(filename, data, function (err) {
             if (err) {
                 console.error(err);
             }
         })
     }
     private appendToFile(data: string, filename: string): boolean {
-        this.fs.appendFile(filename, data, function (err) {
+        fs.appendFile(filename, data, function (err) {
             if (err) {
                 console.error(err);
                 return false;
@@ -285,7 +291,7 @@ const crawler = new PlaywrightCrawler(true,
         //analysis.print(Dataset, validatedArgs.consentMode == ConsentMode.Accept ? "accept" : "noop");
     });
 
-crawler.addRequests(validatedArgs.targetUrls);
+await crawler.addRequests(validatedArgs.targetUrls);
 
 // Run the crawler and wait for it to finish.
 await crawler.run();
