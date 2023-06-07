@@ -6,4 +6,3 @@ node_modules/
 crawl_data/*.png
 crawl_data/*.json
 analysis/data/data_accept.json
-analysis/data/data_noop.json
