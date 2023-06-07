@@ -3,9 +3,6 @@ import { join } from "path";
 import { readFileSync, write } from 'fs';
 import { fileURLToPath } from 'url';
 
-// import { PlaywrightCrawler} from 'crawlee';
-import { PlaywrightCrawler } from "./crawler";
-
 // Import the Chromium browser into our scraper.
 import { chromium, Browser, Page, Request, selectors } from 'playwright';
 import { Command } from 'commander'
@@ -288,7 +285,7 @@ const crawler = new PlaywrightCrawler(true,
         //analysis.print(Dataset, validatedArgs.consentMode == ConsentMode.Accept ? "accept" : "noop");
     });
 
-await crawler.addRequests(validatedArgs.targetUrls);
+crawler.addRequests(validatedArgs.targetUrls);
 
 // Run the crawler and wait for it to finish.
 await crawler.run();
