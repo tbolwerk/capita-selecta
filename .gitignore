@@ -2,8 +2,8 @@ node_modules/
 /test-results/
 /playwright-report/
 /playwright/.cache/
-*.png
-crawl_data/*.png
-crawl_data/*.json
-analysis/data/data_accept.json
-analysis/data/data_noop.json
+
+
+
+
+
