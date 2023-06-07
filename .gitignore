@@ -3,6 +3,6 @@ node_modules/
 /playwright-report/
 /playwright/.cache/
 *.png
-/crawl_data/*
+crawl_data/*
 analysis/data/data_accept.json
 analysis/data/data_noop.json
