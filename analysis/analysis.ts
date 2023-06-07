@@ -139,7 +139,7 @@ export function getRedirections() {
     filteredRedirects.forEach((redirect, _) => {
         result.push(redirect);
     });
-    return result;
+    return Object.fromEntries(Object.entries(result).slice(0, 10))
 }
 
 
