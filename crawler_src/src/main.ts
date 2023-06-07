@@ -146,7 +146,7 @@ function getDomain(url: string): string {
 }
 
 function parseRankedDomainsCsv(filePath: string): string[] {
-    const csvFilePath = path.resolve(__dirname, '../'.concat(filePath));
+    const csvFilePath = path.resolve(__dirname, '../../'.concat(filePath));
     const domains = load(csvFilePath, {
         skip: ['tranco_rank']
     });
