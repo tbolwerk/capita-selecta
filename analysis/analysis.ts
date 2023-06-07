@@ -20,7 +20,7 @@ let cookies: Array<Array<Object>> = [];
 let trackerJSON;
 let companyJSON;
 
-function findCompanies(domains: Array<string>) {
+export function findCompanies(domains: Array<string>) {
     let companies: Array<string> = [];
     for (let i in domains) {
         if (domains[i]) {
@@ -35,7 +35,7 @@ function findCompanies(domains: Array<string>) {
     return [...new Set(companies)];
 }
 
-function getMostPrevalentThirdParties() {
+export function getMostPrevalentThirdParties() {
     let topTen = getTopTenFromList(distinct_third_parties.flat());
 
     let data: Array<Object> = [];
@@ -50,7 +50,7 @@ function getMostPrevalentThirdParties() {
     return data
 }
 
-function getMostPrevalentTrackers() {
+export function getMostPrevalentTrackers() {
     let topTen = getTopTenFromList(distinct_companies.flat());
 
     let data: Array<Object> = [];
@@ -65,7 +65,7 @@ function getMostPrevalentTrackers() {
 }
 
 
-function getTopTenFromList(list) {
+export function getTopTenFromList(list) {
     let topTen = list.reduce(function (acc, curr) {
         return acc[curr] ? ++acc[curr] : acc[curr] = 1, acc
     }, {});
@@ -78,12 +78,12 @@ function getTopTenFromList(list) {
     return Object.fromEntries(Object.entries(topTen).slice(0, 10))
 }
 
-function getLongLifeCookies() {
+export function getLongLifeCookies() {
     let sorted = cookies.flat().sort((a, b) => (a.expires > b.expires) ? -1 : 1)
     return Object.fromEntries(Object.entries(sorted).slice(0, 3))
 }
 
-function getMostCookieRequests() {
+export function getMostCookieRequests() {
     let list: Array<Object> = [];
     for (let i in requests) {
         let cookies = requests[i].cookie != undefined ? requests[i].cookie.split(";").length : null;
@@ -104,7 +104,7 @@ function getMostCookieRequests() {
     return Object.fromEntries(Object.entries(sorted).slice(0, 3))
 }
 
-function getRedirections(){
+export function getRedirections(){
     // let redirections: Array<Object> = [];
     // let domains: Array<string> = [];
     // for (let i in responses){
@@ -118,26 +118,26 @@ function getRedirections(){
     return "TODO";
 }
 
-module.exports = {
-    setTrackers: (trackers) => { trackerJSON = JSON.stringify(trackers) },
-    setCompanies: (companies) => { companyJSON = companies; },
 
-    incrementPageLoadTimeout: () => { page_load_timeout++ },
-    incrementDNSError: () => { DNS_error++ },
-    incrementConsentClickError: () => { consent_click_error++ },
+export function setTrackers(trackers){ trackerJSON = JSON.stringify(trackers) }
+export function setCompanies(companies) { companyJSON = companies; }
 
-    addPageLoadTime: (item: number) => { page_load_time.push(item) },
-    addRequests: (request) => {
+    export function incrementPageLoadTimeout () { page_load_timeout++ }
+    export function incrementDNSError ()  { DNS_error++ }
+    export function incrementConsentClickError ()  { consent_click_error++ }
+
+    export function addPageLoadTime (item: number)  { page_load_time.push(item) }
+    export function addRequests (request)  {
         requests_numberof.push(request.length);
         for (let i in request) {
             requests.push(request[i])
         }
-    },
-    addResponses: (response, domain) => {
+    }
+    export function addResponses (response, domain)  {
         response["domain"] = domain;
         responses.push(response);
-    },
-    addDistinctThirdParties: (items: Array<string>) => {
+    }
+    export function addDistinctThirdParties (items: Array<string>){
         items = [...new Set(items)];
         distinct_third_parties.push(items);
         distinct_third_parties_numberof.push(items.length);
@@ -149,11 +149,11 @@ module.exports = {
         let companies = findCompanies(trackers);
         distinct_companies.push(companies);
         distinct_companies_numberof.push(companies.length);
-    },
+    }
 
-    addCookies: (item: Array<Object>) => { cookies.push(item) },
+    export function addCookies (item: Array<Object>)  { cookies.push(item) }
 
-    print: (DataSet, mode: string) => {
+    export function print (DataSet, mode: string)  {
         let data = {
             mode: mode,
 
@@ -192,5 +192,5 @@ module.exports = {
         let jsonData = JSON.stringify(data);
         DataSet.writeToFile(jsonData, `../analysis/data/data_${mode}.json`);
     }
-};
+
 
