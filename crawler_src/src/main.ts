@@ -108,6 +108,7 @@ class PlaywrightCrawler {
 
             counter++;
             if (counter == this.links.length) {
+                console.log("Crawler finished.");
                 analysis.print(Dataset, validatedArgs.consentMode == ConsentMode.Accept ? "accept" : "noop");
             }
         });
@@ -291,8 +292,6 @@ await crawler.addRequests(validatedArgs.targetUrls);
 
 // Run the crawler and wait for it to finish.
 await crawler.run();
-
-console.log('Crawler finished.');
 
 // Sanitize the pass candidate word and check whether we recognize
 // it as acceptance word.
