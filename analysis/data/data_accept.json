@@ -1,1 +1,347 @@
-{"mode":"accept","page_load_timeout":0,"DNS_error":0,"consent_click_error":0,"requests":{"0":{"cookies":20,"hostname":"www.nu.nl","website":"https://www.nu.nl/","first_party_request":true},"1":{"cookies":6,"hostname":"www.nu.nl","website":"https://www.nu.nl/","first_party_request":true},"2":{"cookies":6,"hostname":"login.dpgmedia.nl","website":"https://www.nu.nl/","first_party_request":false}},"page_load_time_min":906,"page_load_time_max":906,"page_load_time":906,"requests_min":219,"requests_max":219,"requests_numberof":219,"distinct_third_parties":[["www.google.com"],["cmp.dpgmedia.nl",null,"myprivacy-static.dpgmedia.net","c.dpgmedia.net","myprivacy.dpgmedia.net","www.nu.nl","cmp.nu.nl","fonts.gstatic.com","profile-public-api.data.dpgmedia.cloud","temptation.nu.nl","web-sdk.dpns-notifications.com","login.nu.nl","static.hotjar.com","ad.sxp.smartclip.net","www.google-analytics.com","www.googletagmanager.com","static.qmusic.be","w.usabilla.com","cdn.brandmetrics.com","cm.g.doubleclick.net","login.dpgmedia.nl","c1.adform.net","ad.360yield.com","match.adsrvr.org","htlb.casalemedia.com","fastlane.rubiconproject.com","bidder.criteo.com","sync.sxp.smartclip.net","dev.visualwebsiteoptimizer.com","fonts.qmusic.be","stats.g.doubleclick.net","collector.brandmetrics.com","js-agent.newrelic.com","connect.facebook.net","sb.scorecardresearch.com","config.dpns-notifications.com","tentacles.smartocto.com","www.facebook.com","end.nmo-ep.nl","api.smartocto.com","client.dpns-notifications.com","static.criteo.net","gum.criteo.com","js-sec.indexww.com","sync.taboola.com","x.bidswitch.net","cdn.indexww.com","ads.avads.net","s.company-target.com","pr-bh.ybp.yahoo.com","px.ads.linkedin.com"]],"distinct_third_parties_numberof_min":51,"distinct_third_parties_numberof_max":51,"distinct_third_parties_numberof":51,"distinct_trackers":[[null,"www.facebook.com"]],"distinct_trackers_numberof_min":2,"distinct_trackers_numberof_max":2,"distinct_trackers_numberof":2,"distinct_companies":[["Facebook, Inc."]],"distinct_companies_numberof_min":1,"distinct_companies_numberof_max":1,"distinct_companies_numberof":1,"most_prevalent_third_parties":[{"domain":"www.google.com","occurence":1,"isTracker":false},{"domain":"cmp.dpgmedia.nl","occurence":1,"isTracker":false},{"domain":"myprivacy-static.dpgmedia.net","occurence":1,"isTracker":false},{"domain":"c.dpgmedia.net","occurence":1,"isTracker":false},{"domain":"myprivacy.dpgmedia.net","occurence":1,"isTracker":false},{"domain":"www.nu.nl","occurence":1,"isTracker":false},{"domain":"cmp.nu.nl","occurence":1,"isTracker":false},{"domain":"fonts.gstatic.com","occurence":1,"isTracker":false},{"domain":"profile-public-api.data.dpgmedia.cloud","occurence":1,"isTracker":false},{"domain":"temptation.nu.nl","occurence":1,"isTracker":false}],"most_prevalent_trackers":[{"entity":"Facebook, Inc.","occurence":1}],"long_life_cookies":{"0":{"name":"_sp_id.e23f","value":"4e508","domain":".dpgmedia.nl","path":"/","expires":1720699818.484088,"httpOnly":false,"secure":true,"sameSite":"None","size":253},"1":{"name":"authId","value":"74695","domain":"myprivacy.dpgmedia.nl","path":"/","expires":1720699818.221702,"httpOnly":false,"secure":true,"sameSite":"Lax","size":184},"2":{"name":"xAuthId","value":"74695","domain":"myprivacy.dpgmedia.nl","path":"/","expires":1720699818.2216,"httpOnly":true,"secure":true,"sameSite":"Lax","size":182}},"redirections":[{"source":"ad.sxp.smartclip.net","target":"ad.sxp.smartclip.net","distinctWebsites":1},{"source":"cm.g.doubleclick.net","target":"cm.g.doubleclick.net","distinctWebsites":1},{"source":"cm.g.doubleclick.net","target":"ad.360yield.com","distinctWebsites":1},{"source":"cm.g.doubleclick.net","target":"ib.adnxs.com","distinctWebsites":1},{"source":"c1.adform.net","target":"c1.adform.net","distinctWebsites":1},{"source":"ad.360yield.com","target":"ad.360yield.com","distinctWebsites":1},{"source":"sync.mathtag.com","target":"sync.sxp.smartclip.net","distinctWebsites":1},{"source":"ad.360yield.com","target":"cm.g.doubleclick.net","distinctWebsites":1},{"source":"c1.adform.net","target":"sync.sxp.smartclip.net","distinctWebsites":1},{"source":"sb.scorecardresearch.com","target":null,"distinctWebsites":1},{"source":"sb.scorecardresearch.com","target":"end.nmo-ep.nl","distinctWebsites":1},{"source":"csyn-r.cxense.com","target":"token.rubiconproject.com","distinctWebsites":1},{"source":"ads.creative-serving.com","target":"ads.creative-serving.com","distinctWebsites":1},{"source":"ads.creative-serving.com","target":"csyn.cxense.com","distinctWebsites":1},{"source":"ssum-sec.casalemedia.com","target":null,"distinctWebsites":1},{"source":"cm.g.doubleclick.net","target":"ssum-sec.casalemedia.com","distinctWebsites":1},{"source":"match.adsrvr.org","target":"match.adsrvr.org","distinctWebsites":1},{"source":"token.rubiconproject.com","target":"cm.g.doubleclick.net","distinctWebsites":1},{"source":"token.rubiconproject.com","target":"px.ads.linkedin.com","distinctWebsites":1},{"source":"sync.mathtag.com","target":"dsum-sec.casalemedia.com","distinctWebsites":1},{"source":"x.bidswitch.net","target":"x.bidswitch.net","distinctWebsites":1},{"source":"dsum-sec.casalemedia.com","target":"cm.g.doubleclick.net","distinctWebsites":1},{"source":"cm.g.doubleclick.net","target":"pixel.rubiconproject.com","distinctWebsites":1},{"source":"match.adsrvr.org","target":"dsum-sec.casalemedia.com","distinctWebsites":1},{"source":"token.rubiconproject.com","target":"pr-bh.ybp.yahoo.com","distinctWebsites":1},{"source":"x.bidswitch.net","target":null,"distinctWebsites":1},{"source":"cm.g.doubleclick.net","target":"dsum-sec.casalemedia.com","distinctWebsites":1},{"source":"match.adsrvr.org","target":"pixel.rubiconproject.com","distinctWebsites":1},{"source":"pixel.rubiconproject.com","target":"cm.g.doubleclick.net","distinctWebsites":1},{"source":"ads.avads.net","target":"x.bidswitch.net","distinctWebsites":1},{"source":"s.company-target.com","target":"dsum-sec.casalemedia.com","distinctWebsites":1},{"source":"aax-eu.amazon-adsystem.com","target":"aax-eu.amazon-adsystem.com","distinctWebsites":1},{"source":"pr-bh.ybp.yahoo.com","target":"pixel.rubiconproject.com","distinctWebsites":1},{"source":"aax-eu.amazon-adsystem.com","target":"pixel.rubiconproject.com","distinctWebsites":1},{"source":"pixel.rubiconproject.com","target":"aax-eu.amazon-adsystem.com","distinctWebsites":1},{"source":"s.amazon-adsystem.com","target":"s.amazon-adsystem.com","distinctWebsites":1},{"source":"s.amazon-adsystem.com","target":"pixel.rubiconproject.com","distinctWebsites":1},{"source":"pixel.rubiconproject.com","target":"s.amazon-adsystem.com","distinctWebsites":1}]}
+{
+    "mode": "accept",
+    "page_load_timeout": 0,
+    "DNS_error": 0,
+    "consent_click_error": 1,
+    "requests": {
+        "0": {
+            "cookies": 14,
+            "hostname": "target.microsoft.com",
+            "website": "https://www.microsoft.com/",
+            "first_party_request": false
+        },
+        "1": {
+            "cookies": 14,
+            "website": "https://www.microsoft.com/",
+            "first_party_request": false
+        },
+        "2": {
+            "cookies": 13,
+            "hostname": "www.microsoft.com",
+            "website": "https://www.microsoft.com/nl-nl/",
+            "first_party_request": true
+        }
+    },
+    "page_load_time_min": 891,
+    "page_load_time_max": 6917,
+    "page_load_time": 2288.8571428571427,
+    "requests_min": 3,
+    "requests_max": 145,
+    "requests_numberof": 45.142857142857146,
+    "distinct_third_parties": [
+        [
+            "www.google.com"
+        ],
+        [
+            "www.google.com",
+            "consent.google.com"
+        ],
+        [
+            "cdn.cookielaw.org",
+            "www.netflix.com",
+            null,
+            "www.facebook.com",
+            "www.googletagmanager.com",
+            "googleads.g.doubleclick.net",
+            "www.google.nl",
+            "www.google.com",
+            "www.googleadservices.com"
+        ],
+        [
+            "www.microsoft.com",
+            "logincdn.msftauth.net",
+            "mem.gfx.ms",
+            "target.microsoft.com",
+            "cdn-dynmedia-1.microsoft.com",
+            null,
+            "consentreceiverfd-prod.azurefd.net",
+            "www.facebook.com",
+            "googleads.g.doubleclick.net",
+            "d.impactradius-event.com",
+            "bat.bing.com",
+            "www.googletagmanager.com",
+            "www.google.com",
+            "msftenterprise.sc.omtrdc.net",
+            "www.google.nl",
+            "dc.ads.linkedin.com",
+            "www.clarity.ms",
+            "ats.everesttech.net",
+            "idsync.rlcdn.com",
+            "cm.g.doubleclick.net",
+            "rtd.tubemogul.com",
+            "rtd-tm.everesttech.net",
+            "idpix.media6degrees.com",
+            "analytics.twitter.com",
+            "match.adsrvr.org",
+            "cms.quantserve.com",
+            "www.linkedin.com",
+            "c.bing.com",
+            "px.ads.linkedin.com",
+            "a.tribalfusion.com",
+            "cms.analytics.yahoo.com",
+            "ups.analytics.yahoo.com",
+            "s.tribalfusion.com",
+            "jadserve.postrelease.com",
+            "ds.reson8.com",
+            "dmpsync.3lift.com",
+            "bttrack.com",
+            "sync.crwdcntrl.net",
+            "rtb.adentifi.com",
+            "sync-tm.everesttech.net",
+            "trc.taboola.com"
+        ],
+        [
+            "www.facebook.com"
+        ],
+        [
+            "www.facebook.com",
+            "static.cdninstagram.com",
+            "www.instagram.com",
+            "graphql.instagram.com"
+        ],
+        [
+            "abs.twimg.com",
+            "accounts.google.com",
+            "api.twitter.com",
+            "twitter.com",
+            null,
+            "fonts.gstatic.com",
+            "abs-0.twimg.com",
+            "pbs.twimg.com",
+            "video.twimg.com",
+            "play.google.com"
+        ],
+        [
+            "pss.bdstatic.com",
+            null
+        ]
+    ],
+    "distinct_third_parties_numberof_min": 1,
+    "distinct_third_parties_numberof_max": 41,
+    "distinct_third_parties_numberof": 9.857142857142858,
+    "distinct_trackers": [
+        [
+            "www.google.com"
+        ],
+        [
+            null,
+            "www.facebook.com",
+            "www.google.com"
+        ],
+        [
+            "www.microsoft.com",
+            null,
+            "www.facebook.com",
+            "www.google.com",
+            "www.linkedin.com",
+            "bttrack.com"
+        ],
+        [
+            "www.facebook.com"
+        ],
+        [
+            "www.facebook.com"
+        ],
+        [
+            "accounts.google.com",
+            "twitter.com",
+            null,
+            "play.google.com"
+        ],
+        [
+            null
+        ]
+    ],
+    "distinct_trackers_numberof_min": 1,
+    "distinct_trackers_numberof_max": 6,
+    "distinct_trackers_numberof": 2.4285714285714284,
+    "distinct_companies": [
+        [
+            "Google LLC"
+        ],
+        [
+            "Facebook, Inc.",
+            "Google LLC"
+        ],
+        [
+            "Microsoft Corporation",
+            "Facebook, Inc.",
+            "Google LLC",
+            "Bidtellect, Inc"
+        ],
+        [
+            "Facebook, Inc."
+        ],
+        [
+            "Facebook, Inc."
+        ],
+        [
+            "Twitter, Inc."
+        ],
+        []
+    ],
+    "distinct_companies_numberof_min": 0,
+    "distinct_companies_numberof_max": 4,
+    "distinct_companies_numberof": 1.4285714285714286,
+    "most_prevalent_third_parties": [
+        {
+            "domain": "www.google.com",
+            "occurence": 4,
+            "isTracker": true
+        },
+        {
+            "domain": "www.facebook.com",
+            "occurence": 4,
+            "isTracker": true
+        },
+        {
+            "domain": "www.googletagmanager.com",
+            "occurence": 2,
+            "isTracker": false
+        },
+        {
+            "domain": "googleads.g.doubleclick.net",
+            "occurence": 2,
+            "isTracker": false
+        },
+        {
+            "domain": "www.google.nl",
+            "occurence": 2,
+            "isTracker": false
+        },
+        {
+            "domain": "consent.google.com",
+            "occurence": 1,
+            "isTracker": false
+        },
+        {
+            "domain": "cdn.cookielaw.org",
+            "occurence": 1,
+            "isTracker": false
+        },
+        {
+            "domain": "www.netflix.com",
+            "occurence": 1,
+            "isTracker": false
+        },
+        {
+            "domain": "www.googleadservices.com",
+            "occurence": 1,
+            "isTracker": false
+        },
+        {
+            "domain": "www.microsoft.com",
+            "occurence": 1,
+            "isTracker": true
+        }
+    ],
+    "most_prevalent_trackers": [
+        {
+            "entity": "Facebook, Inc.",
+            "occurence": 4
+        },
+        {
+            "entity": "Google LLC",
+            "occurence": 3
+        },
+        {
+            "entity": "Microsoft Corporation",
+            "occurence": 1
+        },
+        {
+            "entity": "Bidtellect, Inc",
+            "occurence": 1
+        },
+        {
+            "entity": "Twitter, Inc.",
+            "occurence": 1
+        }
+    ],
+    "long_life_cookies": {
+        "0": {
+            "name": "PSTM",
+            "value": "16861",
+            "domain": ".baidu.com",
+            "path": "/",
+            "expires": 1720700399.642728,
+            "httpOnly": false,
+            "secure": false,
+            "sameSite": "Lax",
+            "size": 146
+        },
+        "1": {
+            "name": "BIDUPSID",
+            "value": "4C392",
+            "domain": ".baidu.com",
+            "path": "/",
+            "expires": 1720700399.642709,
+            "httpOnly": false,
+            "secure": false,
+            "sameSite": "Lax",
+            "size": 172
+        },
+        "2": {
+            "name": "CONSENT",
+            "value": "PENDI",
+            "domain": ".google.com",
+            "path": "/",
+            "expires": 1720700371.611733,
+            "httpOnly": false,
+            "secure": true,
+            "sameSite": "Lax",
+            "size": 150
+        }
+    },
+    "redirections": {
+        "0": {
+            "source": "googleads.g.doubleclick.net",
+            "target": "www.google.com",
+            "distinctWebsites": 2
+        },
+        "1": {
+            "source": "www.google.com",
+            "target": "www.google.nl",
+            "distinctWebsites": 2
+        },
+        "2": {
+            "source": "cm.everesttech.net",
+            "target": "dpm.demdex.net",
+            "distinctWebsites": 1
+        },
+        "3": {
+            "source": "dc.ads.linkedin.com",
+            "target": null,
+            "distinctWebsites": 1
+        },
+        "4": {
+            "source": "idsync.rlcdn.com",
+            "target": "idsync.rlcdn.com",
+            "distinctWebsites": 1
+        },
+        "5": {
+            "source": "idsync.rlcdn.com",
+            "target": "dpm.demdex.net",
+            "distinctWebsites": 1
+        },
+        "6": {
+            "source": "dc.ads.linkedin.com",
+            "target": "www.linkedin.com",
+            "distinctWebsites": 1
+        },
+        "7": {
+            "source": "cm.g.doubleclick.net",
+            "target": "dpm.demdex.net",
+            "distinctWebsites": 1
+        },
+        "8": {
+            "source": "rtd.tubemogul.com",
+            "target": "rtd-tm.everesttech.net",
+            "distinctWebsites": 1
+        },
+        "9": {
+            "source": "rtd-tm.everesttech.net",
+            "target": "rtd-tm.everesttech.net",
+            "distinctWebsites": 1
+        }
+    }
+}
