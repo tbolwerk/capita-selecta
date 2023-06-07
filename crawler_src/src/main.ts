@@ -74,47 +74,51 @@ class PlaywrightCrawler {
         });
 
         let counter = 0;
-        this.links.forEach(async link => {
-            const browser = await this.browser.newContext();
-            browser.setDefaultTimeout(DEFAULT_TIMEOUT)
-            const page = await browser.newPage();
+        const linkGroups = [];
+for (let i = 0; i < this.links.length; i += 5) {
+    linkGroups.push(this.links.slice(i, i + 5));
+}
 
-            try {
-                let startLoading = new Date();
-                await page.goto(link, { timeout: DEFAULT_TIMEOUT });
-                let stopLoading = new Date();
-                let loadingTime = stopLoading.getTime() - startLoading.getTime()
-                analysis.addPageLoadTime(loadingTime);
-                analysis.addCookies(await browser.cookies())
-            } catch (error) {
-                if (error instanceof playwright.errors.TimeoutError) {
-                    console.error("Timeout error occured: " + error);
-                    analysis.incrementPageLoadTimeout();
-                }
-                else {
-                    console.error("DNS error occured: ", error);
-                    analysis.incrementDNSError();
-                }
-            }
-            try {
-                await this.requestHandler(page);
-            }
-            catch (error) {
-                console.error("RequestHandler aborted earlier than expected. " + error);
-            }
-            // Turn off the browser context to clean up after ourselves.
-            await browser.close();
+for (const group of linkGroups) {
+    for (const link of group) {
+        const browser = await this.browser.newContext();
+        browser.setDefaultTimeout(DEFAULT_TIMEOUT);
+        const page = await browser.newPage();
 
-            counter++;
-            if (counter == this.links.length) {
-                console.log("Crawler finished.");
-                analysis.print(Dataset, validatedArgs.consentMode == ConsentMode.Accept ? "accept" : "noop");
-                
-                // Close the browser instance.
-                await this.browser.close();
-                console.log("Exiting");
+        try {
+            let startLoading = new Date();
+            await page.goto(link, { timeout: DEFAULT_TIMEOUT });
+            let stopLoading = new Date();
+            let loadingTime = stopLoading.getTime() - startLoading.getTime();
+            analysis.addPageLoadTime(loadingTime);
+            analysis.addCookies(await browser.cookies());
+        } catch (error) {
+            if (error instanceof playwright.errors.TimeoutError) {
+                console.error("Timeout error occured: " + error);
+                analysis.incrementPageLoadTimeout();
+            } else {
+                console.error("DNS error occured: ", error);
+                analysis.incrementDNSError();
             }
-        });
+        }
+        try {
+            await this.requestHandler(page);
+        } catch (error) {
+            console.error("RequestHandler aborted earlier than expected. " + error);
+        }
+        // Turn off the browser context to clean up after ourselves.
+        await browser.close();
+    }
+
+    console.log("Group finished.");
+    // Close the browser instance after each group.
+    await this.browser.close();
+}
+
+console.log("Crawler finished.");
+analysis.print(Dataset, validatedArgs.consentMode == ConsentMode.Accept ? "accept" : "noop");
+console.log("Exiting");
+
     }
 }
 
