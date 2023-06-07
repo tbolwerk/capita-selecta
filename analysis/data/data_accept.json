@@ -10491,54 +10491,54 @@
     },
     "redirections": {
         "0": {
-            "source": "googleads.g.doubleclick.net",
-            "target": "www.google.com",
-            "distinctWebsites": 34
-        },
-        "1": {
-            "source": "www.google.com",
-            "target": "www.google.nl",
-            "distinctWebsites": 35
-        },
-        "2": {
-            "source": "cm.everesttech.net",
-            "target": "dpm.demdex.net",
-            "distinctWebsites": 8
-        },
-        "3": {
-            "source": "idsync.rlcdn.com",
-            "target": "idsync.rlcdn.com",
-            "distinctWebsites": 9
-        },
-        "4": {
-            "source": "idsync.rlcdn.com",
-            "target": "dpm.demdex.net",
-            "distinctWebsites": 7
-        },
-        "5": {
-            "source": "dc.ads.linkedin.com",
-            "target": null,
-            "distinctWebsites": 2
-        },
-        "6": {
-            "source": "cm.g.doubleclick.net",
-            "target": "dpm.demdex.net",
-            "distinctWebsites": 9
-        },
-        "7": {
-            "source": "dc.ads.linkedin.com",
-            "target": "www.linkedin.com",
-            "distinctWebsites": 2
-        },
-        "8": {
-            "source": "rtd.tubemogul.com",
-            "target": "rtd-tm.everesttech.net",
-            "distinctWebsites": 1
-        },
-        "9": {
             "source": "www.linkedin.com",
             "target": "px.ads.linkedin.com",
+            "distinctWebsites": 49
+        },
+        "1": {
+            "source": "px.ads.linkedin.com",
+            "target": null,
             "distinctWebsites": 48
+        },
+        "2": {
+            "source": "px.ads.linkedin.com",
+            "target": "www.linkedin.com",
+            "distinctWebsites": 47
+        },
+        "3": {
+            "source": "sb.scorecardresearch.com",
+            "target": null,
+            "distinctWebsites": 44
+        },
+        "4": {
+            "source": "x.bidswitch.net",
+            "target": "x.bidswitch.net",
+            "distinctWebsites": 43
+        },
+        "5": {
+            "source": "www.google.com",
+            "target": "www.google.nl",
+            "distinctWebsites": 36
+        },
+        "6": {
+            "source": "googleads.g.doubleclick.net",
+            "target": "www.google.com",
+            "distinctWebsites": 35
+        },
+        "7": {
+            "source": "aax-eu.amazon-adsystem.com",
+            "target": "aax-eu.amazon-adsystem.com",
+            "distinctWebsites": 33
+        },
+        "8": {
+            "source": "cm.g.doubleclick.net",
+            "target": "image2.pubmatic.com",
+            "distinctWebsites": 28
+        },
+        "9": {
+            "source": "dpm.demdex.net",
+            "target": "dpm.demdex.net",
+            "distinctWebsites": 27
         }
     }
 }
