@@ -58,7 +58,7 @@ class PlaywrightCrawler {
     private requestHandler: (page: Page) => Promise<void>;
     private links: string[] = [];
     private size: number = 5;
-    constructor(headless: boolean, requestHandler: (page: Page) => Promise<void>, size:number) {
+    constructor(headless: boolean, requestHandler: (page: Page) => Promise<void>, size: number) {
         this.headless = headless;
         this.requestHandler = requestHandler;
         this.size = size;
@@ -77,46 +77,50 @@ class PlaywrightCrawler {
 
         let counter = 0;
         const linkGroups = [];
-for (let i = 0; i < this.links.length; i += this.size) {
-    linkGroups.push(this.links.slice(i, i + this.size));
-}
-
-for (const group of linkGroups) {
-    await Promise.all(group.map(async link => {
-        const browser = await this.browser.newContext();
-        browser.setDefaultTimeout(DEFAULT_TIMEOUT);
-        const page = await browser.newPage();
-
-        try {
-            let startLoading = new Date();
-            await page.goto(link, { timeout: DEFAULT_TIMEOUT });
-            let stopLoading = new Date();
-            let loadingTime = stopLoading.getTime() - startLoading.getTime();
-            analysis.addPageLoadTime(loadingTime);
-            analysis.addCookies(await browser.cookies());
-        } catch (error) {
-            if (error instanceof playwright.errors.TimeoutError) {
-                console.error("Timeout error occured: " + error);
-                analysis.incrementPageLoadTimeout();
-            } else {
-                console.error("DNS error occured: ", error);
-                analysis.incrementDNSError();
-            }
+        for (let i = 0; i < this.links.length; i += this.size) {
+            linkGroups.push(this.links.slice(i, i + this.size));
         }
-        try {
-            await this.requestHandler(page);
-        } catch (error) {
-            console.error("RequestHandler aborted earlier than expected. " + error);
-        }
-        // Turn off the browser context to clean up after ourselves.
-        await browser.close();
-    }));
-    console.log("Group finished.");
-}
 
-console.log("Crawler finished.");
-analysis.print(Dataset, validatedArgs.consentMode == ConsentMode.Accept ? "accept" : "noop");
-console.log("Exiting");
+        for (const group of linkGroups) {
+            await Promise.all(group.map(async link => {
+                const browser = await this.browser.newContext();
+                browser.setDefaultTimeout(DEFAULT_TIMEOUT);
+                const page = await browser.newPage();
+
+                try {
+                    let startLoading = new Date();
+                    await page.goto(link, { timeout: DEFAULT_TIMEOUT });
+                    let stopLoading = new Date();
+                    let loadingTime = stopLoading.getTime() - startLoading.getTime();
+                    analysis.addPageLoadTime(loadingTime);
+                    analysis.addCookies(await browser.cookies());
+                } catch (error) {
+                    if (error instanceof playwright.errors.TimeoutError) {
+                        console.error("Timeout error occured: " + error);
+                        analysis.incrementPageLoadTimeout();
+                    } else {
+                        console.error("DNS error occured: ", error);
+                        analysis.incrementDNSError();
+                    }
+                }
+                try {
+                    await this.requestHandler(page);
+                } catch (error) {
+                    console.error("RequestHandler aborted earlier than expected. " + error);
+                }
+                // Turn off the browser context to clean up after ourselves.
+                await browser.close();
+            }));
+            console.log("Group finished.");
+        }
+
+        console.log("Crawler finished.");
+        analysis.print(Dataset, validatedArgs.consentMode == ConsentMode.Accept ? "accept" : "noop");
+
+        // Close the browser instance after each group.
+        await this.browser.close();
+
+        console.log("Exiting");
 
     }
 }
@@ -243,7 +247,7 @@ const crawler = new PlaywrightCrawler(true,
         // # Issue 7 TODO: Fix this, creat Dataset
         // Crawler intercepts and save HTTP request and response in Dataset.
         // Not sure if headers only is enough? await data.text() throws errors for response..?
-        page.on("response", async data => responseList.push({ "data": await data.allHeaders(), "domain": domain, "url": await data.request().url()}));
+        page.on("response", async data => responseList.push({ "data": await data.allHeaders(), "domain": domain, "url": await data.request().url() }));
         page.on("response", async data => Dataset.pushData({ response: { headers: (await data.allHeaders()) } }, page.url(), "pages.json"));
         page.on("request", async data => Dataset.pushData({ request: (await data.allHeaders()) }, page.url(), "pages.json")); //don't think this is necessary?
         page.on("request", async data => requestList.push(await data.allHeaders()));
@@ -253,7 +257,7 @@ const crawler = new PlaywrightCrawler(true,
         // Only accept cookies when the consent mode says so
         if (validatedArgs.consentMode == ConsentMode.Accept) {
             await page.screenshot({ path: dataFolder + domain.concat('_accept_pre_consent.png') });
-            
+
             let accepted = await CrawlAccept(page, domain);
             if (!accepted) {
                 console.info(`No consent dialog found for ${domain}.`);
@@ -294,7 +298,7 @@ const crawler = new PlaywrightCrawler(true,
         Dataset.writePageVisitInfoToFile(JSON.stringify(page_visit_info), domain, validatedArgs.consentMode == 0 ? 'accept' : 'noop');
         console.info(`Processing ${page.url()}...`);
         //analysis.print(Dataset, validatedArgs.consentMode == ConsentMode.Accept ? "accept" : "noop");
-    },5);
+    }, 5);
 
 await crawler.addRequests(validatedArgs.targetUrls);
 
@@ -330,7 +334,7 @@ async function CrawlAccept(page: Page, domain: string) {
         let word = await elem.innerText();
         if (IsAcceptWord(word)) {
             try {
-                await elem.click({timeout: 1500});
+                await elem.click({ timeout: 1500 });
                 console.info(`Found consent acceptance candidate '${word}' for ${domain}`);
                 return true;
             }
