@@ -25,7 +25,7 @@ import fs from 'fs';
 analysis.setTrackers(trackers);
 analysis.setCompanies(companies);
 
-const dataFolder = "crawl_data";
+const dataFolder = "crawl_data/";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
