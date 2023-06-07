@@ -3,7 +3,6 @@ import { join } from "path";
 import { readFileSync, write } from 'fs';
 import { fileURLToPath } from 'url';
 
-// import { PlaywrightCrawler} from 'crawlee';
 import { PlaywrightCrawler } from "./crawler";
 
 // Import the Chromium browser into our scraper.
@@ -15,9 +14,6 @@ import { createRequire } from 'module';
 import trackers from '../../analysis/data/services.json' assert {type: 'json'};
 import companies from '../../analysis/data/domain_map.json' assert {type: 'json'};
 
-// const require = createRequire(import.meta.url);
-// const analysis = require('../../analysis/analysis');
-// const playwright = require('playwright');
 import * as analysis from '../../analysis/analysis.ts';
 import playwright from 'playwright';
 import fs from 'fs';
@@ -106,13 +102,15 @@ class PlaywrightCrawler {
             catch (error) {
                 console.error("RequestHandler aborted earlier than expected. " + error);
             }
-            // Turn off the browser to clean up after ourselves.
+            // Turn off the browser context to clean up after ourselves.
             await browser.close();
 
             counter++;
             if (counter == this.links.length) {
                 console.log("Crawler finished.");
                 analysis.print(Dataset, validatedArgs.consentMode == ConsentMode.Accept ? "accept" : "noop");
+                
+                // Close the browser instance.
                 await this.browser.close();
                 console.log("Exiting");
             }
