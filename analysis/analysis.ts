@@ -79,8 +79,13 @@ export function getTopTenFromList(list) {
 }
 
 export function getLongLifeCookies() {
-    let sorted = cookies.flat().sort((a, b) => (a.expires > b.expires) ? -1 : 1)
-    return Object.fromEntries(Object.entries(sorted).slice(0, 3))
+    let sorted = cookies.flat().sort((a, b) => (a.expires > b.expires) ? -1 : 1);
+    let topThree = Object.fromEntries(Object.entries(sorted).slice(0, 3));
+    for (let i in topThree){
+        topThree[i].size = JSON.stringify(topThree[i]).length;
+        topThree[i].value = topThree[i].value.slice(0,5);
+    }
+    return topThree;
 }
 
 export function getMostCookieRequests() {
@@ -105,17 +110,25 @@ export function getMostCookieRequests() {
 }
 
 export function getRedirections(){
-    // let redirections: Array<Object> = [];
-    // let domains: Array<string> = [];
-    // for (let i in responses){
-    //     if (responses[i].location != undefined){
-    //         redirections.push(responses[i]);
-    //         domains.push(responses[i].domain);
-    //     }
-    // }
+    let redirections: Array<Object> = [];
+    let domains: Array<string> = [];
+    for (let i in responses){
+        if (responses[i].location != undefined){
 
-    // return redirections;
-    return "TODO";
+            try{
+            let domain = (new URL(responses[i].location));
+            responses[i].locationDomain = domain.hostname;
+            }catch(err){
+                console.log("whoops");
+            }
+
+            redirections.push(responses[i]);
+            domains.push(responses[i].domain);
+        }
+    }
+
+
+    return redirections;
 }
 
 
@@ -190,7 +203,7 @@ export function setCompanies(companies) { companyJSON = companies; }
         }
 
         let jsonData = JSON.stringify(data);
-        DataSet.writeToFile(jsonData, `crawl_data/data_${mode}.json`); // TODO: fix this
+        DataSet.writeToFile(jsonData, `analysis/data/data_${mode}.json`); // TODO: fix this
     }
 
 
