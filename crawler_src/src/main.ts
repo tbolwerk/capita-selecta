@@ -113,6 +113,8 @@ class PlaywrightCrawler {
             if (counter == this.links.length) {
                 console.log("Crawler finished.");
                 analysis.print(Dataset, validatedArgs.consentMode == ConsentMode.Accept ? "accept" : "noop");
+                await this.browser.close();
+                console.log("Exiting");
             }
         });
     }
