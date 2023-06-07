@@ -1,0 +1,27 @@
+{
+    "name": "my-crawler",
+    "version": "0.0.1",
+    "type": "module",
+    "description": "This is an example of a playwright project.",
+    "dependencies": {
+        "commander": "^10.0.1",
+        "csv-load-sync": "^2.3.1",
+        "playwright": "*"
+    },
+    "devDependencies": {
+        "@apify/tsconfig": "^0.1.0",
+        "@types/node": "^18.0.0",
+        "ts-node": "^10.8.0",
+        "typescript": "^5.0.0"
+    },
+    "scripts": {
+        "crawl": "ts-node-esm -T crawler_src/main.ts",
+        "start": "npm run start:dev",
+        "start:prod": "node dist/main.js",
+        "start:dev": "ts-node-esm -T crawler_src/main.ts",
+        "build": "tsc",
+        "test": "echo \"Error: oops, the actor has no tests yet, sad!\" && exit 1"
+    },
+    "author": "It's not you it's me",
+    "license": "ISC"
+}
