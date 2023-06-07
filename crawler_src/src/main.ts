@@ -57,9 +57,11 @@ class PlaywrightCrawler {
     private headless!: boolean;
     private requestHandler: (page: Page) => Promise<void>;
     private links: string[] = [];
-    constructor(headless: boolean, requestHandler: (page: Page) => Promise<void>) {
+    private size: number = 5;
+    constructor(headless: boolean, requestHandler: (page: Page) => Promise<void>, size:number) {
         this.headless = headless;
         this.requestHandler = requestHandler;
+        this.size = size;
     }
 
     public addRequests(links: string[]) {
@@ -75,12 +77,12 @@ class PlaywrightCrawler {
 
         let counter = 0;
         const linkGroups = [];
-for (let i = 0; i < this.links.length; i += 5) {
-    linkGroups.push(this.links.slice(i, i + 5));
+for (let i = 0; i < this.links.length; i += this.size) {
+    linkGroups.push(this.links.slice(i, i + this.size));
 }
 
 for (const group of linkGroups) {
-    for (const link of group) {
+    await Promise.all(group.map(async link => {
         const browser = await this.browser.newContext();
         browser.setDefaultTimeout(DEFAULT_TIMEOUT);
         const page = await browser.newPage();
@@ -108,11 +110,8 @@ for (const group of linkGroups) {
         }
         // Turn off the browser context to clean up after ourselves.
         await browser.close();
-    }
-
+    }));
     console.log("Group finished.");
-    // Close the browser instance after each group.
-    await this.browser.close();
 }
 
 console.log("Crawler finished.");
@@ -295,7 +294,7 @@ const crawler = new PlaywrightCrawler(true,
         Dataset.writePageVisitInfoToFile(JSON.stringify(page_visit_info), domain, validatedArgs.consentMode == 0 ? 'accept' : 'noop');
         console.info(`Processing ${page.url()}...`);
         //analysis.print(Dataset, validatedArgs.consentMode == ConsentMode.Accept ? "accept" : "noop");
-    });
+    },5);
 
 await crawler.addRequests(validatedArgs.targetUrls);
 
