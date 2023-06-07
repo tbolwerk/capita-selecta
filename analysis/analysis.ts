@@ -136,10 +136,14 @@ export function getRedirections() {
     });
 
     let result = [];
+
     filteredRedirects.forEach((redirect, _) => {
         result.push(redirect);
     });
-    return Object.fromEntries(Object.entries(result).slice(0, 10))
+
+    let sorted = result.sort((a, b) => (a.distinctWebsites > b.distinctWebsites) ? -1 : 1)
+
+    return Object.fromEntries(Object.entries(sorted).slice(0, 10))
 }
 
 
