@@ -118,23 +118,26 @@ export function getRedirections() {
         responseList.forEach(response => {
             let redirectPair = { source: response.url, target: response.location_domain };
             if (!redirectsUnique.has(redirectPair)) {
-                redirectsUnique.set(redirectPair, 1);
+                redirectsUnique.set(JSON.stringify(redirectPair), redirectPair);
             }            
         });
 
         // Collect all data into a filtered redirect map.
-        redirectsUnique.forEach((_, redirect) => {
-            if (filteredRedirects.has(redirect)) {
-                filteredRedirects.set(redirect, filteredRedirects.get(redirect) + 1);
+        redirectsUnique.forEach((redirect, redirectStr) => {
+            if (filteredRedirects.has(redirectStr)) {
+                let object = filteredRedirects.get(redirectStr);
+                object['distinctWebsites'] = object.get('distinctWebsites') + 1;
+                filteredRedirects.set(redirectStr, object);
             } else {
-                filteredRedirects.set(redirect, 1);
+                redirect['distinctWebsites'] = 1;
+                filteredRedirects.set(redirectStr, redirect);
             }
         });
     });
 
     let result = [];
-    filteredRedirects.forEach((distinctWebsites, redirect) => {
-        result.push({ source: redirect.source, target: redirect.target, distinctWebsites: distinctWebsites });
+    filteredRedirects.forEach((redirect, _) => {
+        result.push(redirect);
     });
     return result;
 }
